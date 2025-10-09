@@ -9,6 +9,8 @@
   <!-- 速度対策：DNSプリフェッチ & プレコネクト -->
   <link rel="dns-prefetch" href="https://script.google.com">
   <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="dns-prefetch" href="https://script.googleusercontent.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 
   <style>
     :root{
@@ -19,40 +21,27 @@
     *{box-sizing:border-box}
     body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;line-height:1.7;margin:12px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-
     .row{display:flex;gap:8px;align-items:center}
     .row .search{flex:1 1 auto;min-width:0}
-
-    .toolbar{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:8px;margin-top:8px;flex-wrap:wrap;
-    }
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap}
     .limit-wrap{display:flex;align-items:center;gap:6px}
-    .limit-wrap label,
-    .dm-group label{font-size:12px;color:var(--muted);white-space:nowrap}
+    .limit-wrap label,.dm-group label{font-size:12px;color:var(--muted);white-space:nowrap}
     #limit{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
-
     .dm-group{display:flex;align-items:center;gap:6px;margin-left:auto}
     #dm-select{width:auto;min-width:84px;padding:6px 8px;font-size:14px;line-height:1.2}
     .dm-group .btn{padding:6px 10px;font-size:13px;white-space:nowrap}
-
     input[type="search"],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:15px;background:#fff;color:var(--text);outline:none}
     input[type="search"]:focus,select:focus,.btn:focus,.btn-pill:focus{outline:3px solid var(--focus);outline-offset:2px}
-
     .muted{color:var(--muted);font-size:13px}
     .btn{appearance:none;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer}
     .btn:hover{background:#f9fafb}.btn:active{transform:translateY(1px)}
-
-    .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(17,24,39,.92);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s ease}
+    .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(17,24,39,.92);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s}
     .toast.show{opacity:1}
-
     table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:15px;vertical-align:top}
     th{position:sticky;top:0;background:var(--thead);z-index:1;font-weight:700}
     th:nth-child(1),td:nth-child(1){width:30%} th:nth-child(2),td:nth-child(2){width:50%} th:nth-child(3),td:nth-child(3){width:20%}
-
     .ops{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-
     @media (max-width:768px){
       table{display:none}
       .mobile-list{display:block;margin-top:10px}
@@ -62,7 +51,6 @@
       .l2{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
       .btn{padding:8px 12px;font-size:14px}
     }
-
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
       border-radius:10px;padding:8px 12px;font-size:14px;line-height:1.2;text-decoration:none;
@@ -70,13 +58,11 @@
     }
     .btn-pill:hover{background:#eef2f7;text-decoration:none}
     .btn-pill:active{transform:translateY(1px)}
-
-    .ops .btn-pill, .ops .btn, .l2 .btn-pill, .l2 .btn { font-size:11pt; }
+    .ops .btn-pill,.ops .btn,.l2 .btn-pill,.l2 .btn{font-size:11pt}
   </style>
 </head>
 <body>
 
-  <!-- ===== 検索UI ===== -->
   <div class="card">
     <div class="row">
       <input class="search" id="q" type="search" placeholder="曲名／アーティスト名で検索" autocomplete="off">
@@ -99,14 +85,13 @@
           <option value="🍣🧡🍣🧡🍣🧡">🍣🧡🍣</option>
           <option value="🍣🧡🎶🍣🧡🎶">🍣🧡🎶</option>
         </select>
-        <button id="dm-copy" class="btn" type="button" title="選択した弾幕をコピー">コピー</button>
+        <button id="dm-copy" class="btn" type="button">コピー</button>
       </div>
     </div>
 
     <div class="muted" id="status">読み込み中…</div>
   </div>
 
-  <!-- ===== 結果表示 ===== -->
   <div class="card" style="margin-top:12px;">
     <div class="muted" id="hint">検索結果がここに表示されます。</div>
     <div id="table"></div>
@@ -116,21 +101,21 @@
   <div id="toast" class="toast" role="status" aria-live="polite">コピーしました</div>
 
   <script>
-    /* ===== 設定（JSONPとiframeを分離） ===== */
-    // JSONP用（最終echo URLを直書き・末尾を & で終わらせる）
-    const BASE_JSONP = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLivW-fzfTxuBxMpy9Kt35OIsmZuz2V2rUozfSJPYCDzzpGm3Fgg43FVtKBBYcWXURbuJQTot6Z7i50ZLV0ecPDaYkfvtXujO1iKKGc1DFxkiiS8TNaOnRTgvwelXPCixy_IdQbuvblBWArM8LS9GtEuPdeNktsJug2LutcsE0l20y2ymgIzR8QKqupEFOIiv7KGvILKcgr81F6dNCQiP3EpJ3RcJ5LAIe-VErH2cQHsohMeB9HinIb4Omt28_Ivw6DT5XwPKoJONwDIrrWqmO5tBn9sqZHnRVimynqZb4bY-AfUlQm6kh1ZtHJ9yQ&lib=M9JcPTR9hPDuH81yYbATeDf-uGCSO62VC&';
-
-    // iframe用（/exec デプロイURL）
-    const BASE_EXEC  = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
+    /* ===== エンドポイント =====
+       JSONP用（最終 echo URL ／末尾に & を付ける）
+       iframe用（/exec の WebアプリURL）
+    ================================= */
+    const BASE_JSONP = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLiEHQeHvGvdNt3CkX4K5pEeoRU2Kek9Ql1d76FRG1z2aMULunudS8vURnzr1h2I24kbSDYRwGow7CjDpClGTQDcptTdORxBneiWgtBjmqJdWJgqFzUXSZrUaa8xpoRQfEbUUWckqhL9zWjcuIa3ZgHElUALzwWPHSk3SNMRcDr6ZGOBVgba3T4qF-E7zLBgdCu6frXvcu_NIleFwp0ntdoSn2SNjnIOVRM6K4YvGJSoXkW8wpJ7cZQxcCPhsY-eY10vVLFrBdGCPAhq11gLcjBXpO6d5oA4bIc0iAYZdZPkg62FS9IbEANpAX6lEqkKyGjQSX7gZFAEUR-If1w&lib=M9JcPTR9hPDuH81yYbATeDf-uGCSO62VC&';
+    const BASE_EXEC  = 'https://script.google.com/macros/s/AKfycbxNiqbCG2QxEcPSwi3IpwcRw2jt8QLdx0lxDoLQziKQb-DBQGDcjEa73JnVXIgUATc7lA/exec';
 
     const SHEET_KEY = 'perf';
-    const INITIAL_FETCH = 200;   // 初回は軽量
-    const HARD_LIMIT    = 20000; // サーバ上限ガード
-    const JSONP_TIMEOUT_MS = 1800;
+    const INITIAL_FETCH = 200;
+    const HARD_LIMIT = 20000;
+    const JSONP_TIMEOUT_MS = 1800; // モバイルでJSONPが弾かれる場合はすぐiframeに切替
 
     const state = { rows: [], total: 0, fetchedLimit: 0, debounce: null, lastReqId: 0, usedIframe: false };
 
-    /* ===== JSONP コールバック（共通） ===== */
+    /* ===== JSONP / iframe からのコールバック ===== */
     function onGviz(payload) {
       try {
         if (!payload || !payload.ok || !Array.isArray(payload.rows)) {
@@ -152,7 +137,7 @@
     }
     window.onGviz = onGviz;
 
-    // iframe（?frame=1） → postMessage 受信
+    // iframe（?frame=1）→ postMessage 受信
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
@@ -163,9 +148,7 @@
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
     function scheduleSearch(){ clearTimeout(state.debounce); state.debounce = setTimeout(render, 160); }
     function $(id){ return document.getElementById(id); }
-
     function showToast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
-
     async function copyPair(title, artist){
       const text = `${(title||'').trim()} / ${(artist||'').trim()}`.trim();
       try{
@@ -174,7 +157,6 @@
         showToast('コピーしました：' + text);
       }catch{ showToast('コピーに失敗しました'); }
     }
-
     $('dm-copy').addEventListener('click', async ()=>{
       const text = $('dm-select').value || '';
       try{
@@ -183,28 +165,19 @@
         showToast('弾幕をコピーしました');
       }catch{ showToast('弾幕のコピーに失敗しました'); }
     });
-
-    function urlFromText(s){
-      if(!s) return '';
-      const m = String(s).match(/https?:\/\/\S+/);
-      return m ? m[0].replace(/[)\]\s]+$/, '') : '';
-    }
-    function formatYmdLabel(s){
-      const m = /^(\d{4})(\d{2})(\d{2})/.exec(String(s||''));
-      return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
-    }
+    function urlFromText(s){ if(!s) return ''; const m=String(s).match(/https?:\/\/\S+/); return m ? m[0].replace(/[)\]\s]+$/, '') : ''; }
+    function formatYmdLabel(s){ const m = /^(\d{4})(\d{2})(\d{2})/.exec(String(s||'')); return m ? `${m[1]}/${m[2]}/${m[3]}` : null; }
 
     /* ===== 描画 ===== */
     function render(){
       const tableWrap = $('table'); tableWrap.innerHTML = '';
-      const listWrap  = $('mblist'); listWrap.innerHTML = '';
+      const listWrap = $('mblist'); listWrap.innerHTML = '';
       const hint = $('hint');
 
       const q = normalize($('q').value || '');
       const raw = $('limit').value;
-      const limit = raw === 'all'
-        ? Math.min(HARD_LIMIT, state.total || state.rows.length)
-        : Math.min(parseInt(raw,10)||20, HARD_LIMIT);
+      const limit = raw === 'all' ? Math.min(HARD_LIMIT, state.total || state.rows.length)
+                                  : Math.min(parseInt(raw,10)||20, HARD_LIMIT);
       const limitLabel = raw === 'all' ? '全件' : `${limit}件`;
 
       let filtered = state.rows;
@@ -223,7 +196,7 @@
       if (rows.length === 0) { hint.textContent = q ? '該当なし' : '検索結果がここに表示されます。'; return; }
       hint.textContent = '';
 
-      /* ==== PCテーブル ==== */
+      // PC 表
       const table = document.createElement('table');
       const thead = document.createElement('thead');
       const trh = document.createElement('tr');
@@ -267,9 +240,9 @@
         tdOps.appendChild(ops); tr.appendChild(tdOps); tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      tableWrap.appendChild(table);
+      $('table').appendChild(table);
 
-      /* ==== モバイル2行カード ==== */
+      // モバイルカード
       rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
         const item=document.createElement('div'); item.className='item';
 
@@ -313,11 +286,11 @@
       $('mblist').style.display='block';
     }
 
-    /* ===== データ取得（JSONP → 失敗時 iframe） ===== */
+    /* ===== データ取得（JSONP→失敗時 iframe） ===== */
     function fetchRows(limit){
       const reqId = ++state.lastReqId;
 
-      // ★ echo直URLで JSONP（リダイレクトを発生させない）
+      // 1) JSONP（echo 直URL）
       const urlJsonp = `${BASE_JSONP}callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}`;
       const s=document.createElement('script');
       s.src=urlJsonp; s.async=true;
@@ -325,7 +298,7 @@
       document.head.appendChild(s);
       state.fetchedLimit = limit;
 
-      // タイムアウトで iframe フォールバック
+      // 2) タイムアウトで iframe
       setTimeout(()=>{
         if (reqId === state.lastReqId && !state.usedIframe && state.rows.length === 0) {
           tryIframeFallback(limit, reqId, 'timeout');
@@ -341,9 +314,7 @@
       const old = document.getElementById('gviz-frame');
       if (old) old.remove();
 
-      // ★ iframe は /exec の方を開く（echo を iframe にすると 403 になりやすい）
       const urlFrame = `${BASE_EXEC}?frame=1&callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}`;
-
       const f = document.createElement('iframe');
       f.id = 'gviz-frame';
       f.src = urlFrame;
