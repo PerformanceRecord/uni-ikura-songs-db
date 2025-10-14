@@ -28,7 +28,7 @@
     .limit-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
     #limit{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
 
-    /* 弾幕UI 7:3 レイアウト */
+    /* 弾幕UIを7:3でレイアウト（参照版取り込み） */
     .dm-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
     .dm-select-wrap{flex:7 1 0}
     .dm-btn-wrap{flex:3 1 0;display:flex}
@@ -45,19 +45,12 @@
     .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(17,24,39,.92);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s ease}
     .toast.show{opacity:1}
 
-    /* ===== テーブル ===== */
-    table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:auto} /* ← auto に変更 */
+    table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:15px;vertical-align:top}
     th{position:sticky;top:0;background:var(--thead);z-index:1;font-weight:700}
-
-    /* 列幅：1列目は比率、2列目は可変、3列目は固定幅で“歌ってみた ▶前回2025/01/23 コピー”が切れないよう確保 */
-    th:nth-child(1),td:nth-child(1){width:28%}
-    /* 2列目は幅指定せず（auto） */
-    th:nth-child(3),td:nth-child(3){width:420px} /* ← 操作列の固定幅 */
-
-    @media (max-width:1200px){
-      th:nth-child(3),td:nth-child(3){width:380px} /* 画面が狭いPCでの下限幅 */
-    }
+    th:nth-child(1),td:nth-child(1){width:30%}
+    th:nth-child(2),td:nth-child(2){width:50%}
+    th:nth-child(3),td:nth-child(3){width:20%}
 
     /* 操作列は常に1行固定（省略つき） */
     .ops{
@@ -67,22 +60,16 @@
     .ops > *{white-space:nowrap;flex:0 0 auto}
     .ops .btn-pill, .ops .btn{font-size:11pt}
 
-    /* pillリンク：PCは省略させない（max-width解除）、モバイルは省略維持 */
+    /* pillリンクは省略表示に対応（1行固定） */
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
       border-radius:10px;padding:8px 12px;line-height:1.2;text-decoration:none;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    @media (min-width:769px){
-      .ops .btn-pill{max-width:none} /* PCでは切らない */
-    }
-    @media (max-width:768px){
-      .ops .btn-pill{max-width:40vw} /* モバイルは省略 */
+      white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis
     }
     .btn-pill:hover{background:#eef2f7;text-decoration:none}
     .btn-pill:active{transform:translateY(1px)}
 
-    /* ===== モバイル ===== */
+    /* モバイル */
     .mobile-list{display:none}
     @media (max-width:768px){
       table{display:none}
@@ -91,6 +78,7 @@
       .l1{font-size:16px;line-height:1.6;font-weight:700;display:flex;gap:6px;flex-wrap:wrap}
       .l1 .sep{opacity:.6}
       .l2{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
+      .l2 .btn-pill{max-width:40vw}
       .btn{padding:8px 12px;font-size:14px}
       .dm-select-wrap{flex:7 1 0}
       .dm-btn-wrap{flex:3 1 0}
@@ -274,7 +262,7 @@
           const tdOps=document.createElement('td');
           const ops=document.createElement('div'); ops.className='ops';
 
-          // C列リンク（pill）
+          // C列リンク（pill + 省略）
           const cHref = cUrl || urlFromText(cText);
           if (cHref) {
             const aC=document.createElement('a');
@@ -285,7 +273,7 @@
             ops.appendChild(aC);
           }
 
-          // D列リンク（日付ラベルを表示）
+          // D列リンク（現行仕様：日付ラベルを表示）
           const dHref = dUrl || urlFromText(dText);
           const dLabel = formatYmdLabel(dText);
           if (dHref) {
@@ -297,4 +285,119 @@
             ops.appendChild(aD);
           }
 
-          //
+          // コピー
+          const btn=document.createElement('button'); btn.className='btn'; btn.textContent='コピー';
+          btn.addEventListener('click',()=>copyPair(title,artist));
+          ops.appendChild(btn);
+
+          tdOps.appendChild(ops); tr.appendChild(tdOps); tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        tableWrap.appendChild(table);
+
+        // PCではモバイルUIを隠す（21行目問題の根絶）
+        listWrap.style.display = 'none';
+
+      } else {
+        /* ==== モバイル: 2行カードのみ ==== */
+        rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
+          const item=document.createElement('div'); item.className='item';
+
+          const l1=document.createElement('div'); l1.className='l1';
+          const a1=document.createElement('span'); a1.className='artist'; a1.textContent=artist||'';
+          const sep=document.createElement('span'); sep.className='sep'; sep.textContent='/';
+          const t1=document.createElement('span'); t1.className='title'; t1.textContent=title||'';
+          l1.appendChild(a1); l1.appendChild(sep); l1.appendChild(t1);
+
+          const l2=document.createElement('div'); l2.className='l2';
+
+          const cHref = cUrl || urlFromText(cText);
+          if (cHref) {
+            const aC=document.createElement('a');
+            aC.href=cHref; aC.target='_blank'; aC.rel='noopener';
+            aC.className='btn-pill';
+            aC.title=cText||'リンク';
+            aC.textContent=cText||'リンク';
+            l2.appendChild(aC);
+          }
+
+          const dHref = dUrl || urlFromText(dText);
+          const dLabel = formatYmdLabel(dText);
+          if (dHref) {
+            const aD=document.createElement('a');
+            aD.href=dHref; aD.target='_blank'; aD.rel='noopener';
+            aD.className='btn-pill';
+            aD.title=dLabel ? `前回 ${dLabel}` : '前回';
+            aD.textContent=dLabel ? `▶前回${dLabel}` : '▶前回';
+            l2.appendChild(aD);
+          }
+
+          const btn=document.createElement('button'); btn.className='btn'; btn.textContent='コピー';
+          btn.addEventListener('click',()=>copyPair(title,artist));
+          l2.appendChild(btn);
+
+          item.appendChild(l1); item.appendChild(l2);
+          listWrap.appendChild(item);
+        });
+
+        listWrap.style.display='block';
+      }
+    }
+
+    /* ===== データ取得（JSONP→失敗時iframe） ===== */
+    function fetchRows(limit){
+      const reqId = ++state.lastReqId;
+      const urlJsonp = `${BASE}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}`;
+      const s=document.createElement('script');
+      s.src=urlJsonp; s.async=true;
+      s.onerror=()=>{ tryIframeFallback(limit, reqId, 'network'); };
+      document.head.appendChild(s);
+      state.fetchedLimit = limit;
+
+      // タイムアウトで iframe フォールバック
+      setTimeout(()=>{
+        if (reqId === state.lastReqId && !state.usedIframe && state.rows.length === 0) {
+          tryIframeFallback(limit, reqId, 'timeout');
+        }
+      }, JSONP_TIMEOUT_MS);
+    }
+
+    function tryIframeFallback(limit, reqId, reason){
+      if (state.usedIframe) return;
+      state.usedIframe = true;
+      $('status').textContent = `別ルートで取得中…（${reason}）`;
+
+      const old = document.getElementById('gviz-frame');
+      if (old) old.remove();
+
+      const urlFrame = `${BASE}?frame=1&callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}`;
+      const f = document.createElement('iframe');
+      f.id = 'gviz-frame';
+      f.src = urlFrame;
+      f.style.display = 'none';
+      f.width = 0; f.height = 0; f.tabIndex = -1;
+      document.body.appendChild(f);
+    }
+
+    // 初回：必要十分のみ取得
+    fetchRows(INITIAL_FETCH);
+
+    /* ===== イベント ===== */
+    $('q').addEventListener('input', scheduleSearch);
+    $('limit').addEventListener('change', ()=>{
+      const raw = $('limit').value;
+      if (raw === 'all' && state.fetchedLimit < HARD_LIMIT) {
+        $('status').textContent = '全件を取得しています…';
+        fetchRows(HARD_LIMIT);
+      } else {
+        render();
+      }
+    });
+
+    // 画面幅の変化で再描画（PC/モバイル切替のため）
+    const mq = window.matchMedia('(max-width: 768px)');
+    mq.addEventListener?.('change', render);
+    window.addEventListener('resize', render);
+  </script>
+</body>
+</html>
