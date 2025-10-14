@@ -6,9 +6,11 @@
   <meta name="theme-color" content="#ffb744">
   <title>雲丹ゐくら歌唱曲DB</title>
 
-  <!-- 速度対策：DNSプリフェッチ & プレコネクト -->
+  <!-- 速度対策：DNSプリフェッチ & プレコネクト（googleusercontent も追加） -->
   <link rel="dns-prefetch" href="https://script.google.com">
   <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="dns-prefetch" href="https://script.googleusercontent.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 
   <style>
     :root{
@@ -132,40 +134,31 @@
 
   <script>
     /* ===== 設定 ===== */
-    // ② キャッシュバスター対応・⑥ /macros/ 正規化を行うため API_URL を基点にする
+    // 安定URLを基点にし、authuser=0 とキャッシュバスターを付与します
     const API_URL = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
     const SHEET_KEY = 'perf';
     const INITIAL_FETCH = 200;
     const HARD_LIMIT = 20000;
 
-    const state = { rows: [], total: 0, fetchedLimit: 0, debounce: null };
+    // JSONP の最終監視タイムアウト（サーバ遅延に合わせて長め）
+    const JSONP_TIMEOUT_MS = 6500;
+    // 短い間隔での軽リトライ（JSONP 2回まで）→ それでもダメなら iframe
+    const SHORT_TRY_MS = 1500;
+    const MAX_RETRY = 2;
 
-    /* ===== JSONP コールバック（①グローバルへ公開） ===== */
-    function onGviz(payload) {
-      __jsonpHit = true; // ⑧ タイムアウト検知用フラグ
-      try {
-        if (!payload || !Array.isArray(payload.rows)) {
-          $('status').textContent = 'データ取得に失敗しました（不正なレスポンス）';
-          clearSkeleton();
-          return;
-        }
-        const rows = payload.rows.map(r => [
-          r.artist || '', r.title || '', r.cText || '', r.dText || '', r.cUrl || '', r.dUrl || ''
-        ]).filter(([a,b]) => ((a||'')+(b||'')).trim() !== '');
+    const state = {
+      rows: [], total: 0, fetchedLimit: 0, debounce: null,
+      lastReqId: 0, usedIframe: false,
+      pendingHandler: null, // 直近リクエスト専用の onGviz ハンドラ
+      globalTimer: null, shortTimer: null, currentAttempt: 0
+    };
 
-        state.rows = rows;
-        state.total = Number(payload.matched || payload.total || rows.length);
-        $('status').textContent = `読み込み完了：${state.rows.length}件（全${state.total}件）`;
-        clearSkeleton();
-        render();
-      } catch (e) {
-        $('status').textContent = '読み込みに失敗しました';
-        clearSkeleton();
-        console.error(e);
+    /* ===== JSONP コールバック（グローバル公開・最新ハンドラだけを実行） ===== */
+    window.onGviz = function(payload){
+      if (typeof state.pendingHandler === 'function') {
+        state.pendingHandler(payload);
       }
-    }
-    // ① JSONP のためのグローバル関数公開（script 挿入前に必須）
-    window.onGviz = onGviz;
+    };
 
     /* ===== ユーティリティ ===== */
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
@@ -183,6 +176,7 @@
       }catch{ showToast('コピーに失敗しました'); }
     }
 
+    // 弾幕コピー
     $('dm-copy').addEventListener('click', async ()=>{
       const text = $('dm-select').value || '';
       try{
@@ -202,7 +196,7 @@
       return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
     }
 
-    /* ===== スケルトン（⑧ 進捗表示の一部） ===== */
+    /* ===== スケルトン ===== */
     function showSkeleton(){
       const wrap = $('table');
       wrap.innerHTML = '';
@@ -212,10 +206,7 @@
         wrap.appendChild(sk);
       }
     }
-    function clearSkeleton(){
-      // skeleton を消してテーブル描画領域を空に戻す
-      $('table').innerHTML = '';
-    }
+    function clearSkeleton(){ $('table').innerHTML = ''; }
 
     /* ===== 描画 ===== */
     function render(){
@@ -346,38 +337,112 @@
       }
     }
 
-    /* ===== JSONP 取得（②キャッシュバスター＋⑥/macros/正規化＋⑧onerror表示） ===== */
-    let __jsonpHit = false; // ⑧ タイムアウト検知フラグ
-
-    function jsonp(url){
+    /* ===== JSONP 取得（短リトライ → 最後に iframe、authuser=0 付与） ===== */
+    function jsonpOnce(url, onerror){
       const s=document.createElement('script');
       s.src=url;
       s.async=true;
-      s.onerror=()=>{
-        $('status').textContent='データ取得に失敗しました（ネットワーク/ブロック）';
-        clearSkeleton();
-      };
+      s.onerror=onerror;
       document.head.appendChild(s);
     }
 
-    function fetchRows(limit){
-      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/'); // ⑥
-      const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&v=${Date.now()}`; // ②
-      showSkeleton(); // ⑧ 進捗表示
-      $('status').textContent='読み込み中…';
-      __jsonpHit = false;
-      jsonp(url);
+    function fetchRows(limit, attempt=0){
+      const reqId = ++state.lastReqId;
+      state.currentAttempt = attempt;
 
-      // ⑧ 4秒で未着なら通知
-      setTimeout(()=>{
-        if(!__jsonpHit){
-          $('status').textContent='データ取得に失敗しました（JSONP未着／API_URLとデプロイ設定を確認）';
+      // /macros/u/... を安定な /macros/ に正規化
+      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
+      const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
+
+      // ステータス表示とスケルトン
+      $('status').textContent = attempt===0 ? '読み込み中…' : `再試行中…（${attempt}）`;
+      showSkeleton();
+
+      let settled = false;
+
+      // このリクエスト専用の onGviz ハンドラを設定（後から来た応答も最新ハンドラで処理される）
+      state.pendingHandler = (payload)=>{
+        if (settled) return;
+        settled = true;
+        clearTimeout(state.shortTimer);
+        clearTimeout(state.globalTimer);
+
+        try{
+          if (!payload || !Array.isArray(payload.rows)) {
+            $('status').textContent = 'データ取得に失敗しました（不正なレスポンス）';
+            clearSkeleton();
+            return;
+          }
+          const rows = (payload.rows||[])
+            .map(r => [
+              r.artist || '', r.title || '', r.cText || '', r.dText || '', r.cUrl || '', r.dUrl || ''
+            ])
+            .filter(([a,b]) => ((a||'')+(b||'')).trim() !== '');
+
+          state.rows = rows;
+          state.total = Number(payload.matched || payload.total || rows.length);
+          $('status').textContent = `読み込み完了：${state.rows.length}件（全${state.total}件）`;
+          clearSkeleton();
+          render();
+        }catch(e){
+          console.error(e);
+          $('status').textContent = '読み込みに失敗しました';
           clearSkeleton();
         }
-      }, 4000);
+      };
+
+      // 短いタイムアウトで軽リトライ
+      state.shortTimer = setTimeout(()=>{
+        if (settled) return;
+        if (attempt < MAX_RETRY) {
+          fetchRows(limit, attempt+1);
+        }
+        // ここではまだ iframe へは落とさない（最終監視で判断）
+      }, SHORT_TRY_MS);
+
+      // 最終監視（サーバ遅延想定の長めタイムアウト）
+      state.globalTimer = setTimeout(()=>{
+        if (settled) return;
+        settled = true;
+        // 最後の手段：iframe フォールバック
+        tryIframeFallback(limit, reqId, 'jsonp-timeout');
+      }, JSONP_TIMEOUT_MS);
+
+      // JSONP 実行
+      jsonpOnce(url, ()=>{
+        // ネットワーク即時エラーなら短リトライルートに乗る
+      });
     }
 
-    // 初回：必要十分のみ取得
+    function tryIframeFallback(limit, reqId, reason){
+      if (state.usedIframe) return;
+      state.usedIframe = true;
+      $('status').textContent = `別ルートで取得中…（${reason}）`;
+
+      // 既存 iframe を片付け
+      const old = document.getElementById('gviz-frame');
+      if (old) old.remove();
+
+      // iframe 埋め込み（?frame=1 は GS 側で postMessage にフォールバック可能）
+      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
+      const urlFrame = `${base}?frame=1&callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
+      const f = document.createElement('iframe');
+      f.id = 'gviz-frame';
+      f.src = urlFrame;
+      f.style.display = 'none';
+      f.width = 0; f.height = 0; f.tabIndex = -1;
+      document.body.appendChild(f);
+    }
+
+    // iframe（?frame=1）→ postMessage 受信ルート
+    window.addEventListener('message', (ev)=>{
+      const d = ev?.data;
+      if (!d || d.type !== 'gviz') return;
+      // iframe 側からの payload も最新ハンドラで処理
+      if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
+    });
+
+    // 初回：必要十分のみ取得（短リトライ→最終的に iframe）
     fetchRows(INITIAL_FETCH);
 
     /* ===== イベント ===== */
