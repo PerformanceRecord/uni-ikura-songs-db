@@ -28,7 +28,7 @@
     .limit-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
     #limit{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
 
-    /* 弾幕UIを7:3でレイアウト（参照版取り込み） */
+    /* 弾幕UI */
     .dm-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
     .dm-select-wrap{flex:7 1 0}
     .dm-btn-wrap{flex:3 1 0;display:flex}
@@ -39,13 +39,13 @@
     input[type="search"]:focus,select:focus,.btn:focus,.btn-pill:focus{outline:3px solid var(--focus);outline-offset:2px}
 
     .muted{color:var(--muted);font-size:13px}
-    .btn{appearance:none;border:1px solid var(--line);background:#fff;color:#111827;border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;white-space:nowrap}
+    .btn{appearance:none;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;white-space:nowrap}
     .btn:hover{background:#f9fafb}.btn:active{transform:translateY(1px)}
 
     .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(17,24,39,.92);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s ease}
     .toast.show{opacity:1}
 
-    /* ===== テーブル ===== */
+    /* テーブル */
     table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:15px;vertical-align:top}
     th{position:sticky;top:0;background:var(--thead);z-index:1;font-weight:700}
@@ -53,35 +53,23 @@
     th:nth-child(2),td:nth-child(2){width:50%}
     th:nth-child(3),td:nth-child(3){width:20%}
 
-    /* PC: 操作列を“2行目”に配置するためのラッパー */
-    @media (min-width:769px){
-      .ops-2line{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-      .ops-blank{height:0.0em;line-height:0} /* 見た目の1行目（空行扱い） */
-      .ops-row{
-        display:flex;align-items:center;justify-content:flex-start;gap:8px;
-        flex-wrap:wrap; /* 横幅が足りない場合は折り返す */
-        width:100%;
-      }
-    }
-
-    /* モバイルや旧レイアウト互換（念のため） */
     .ops{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap;min-width:0;overflow:hidden}
     .ops > *{white-space:nowrap;flex:0 0 auto}
     .ops .btn-pill, .ops .btn{font-size:11pt}
 
-    /* pillリンク */
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
       border-radius:10px;padding:8px 12px;line-height:1.2;text-decoration:none;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis
     }
-    /* PCでは省略なし（切らない）／モバイルは省略 */
-    @media (min-width:769px){ .btn-pill{max-width:none} }
-    @media (max-width:768px){ .btn-pill{max-width:40vw} }
     .btn-pill:hover{background:#eef2f7;text-decoration:none}
     .btn-pill:active{transform:translateY(1px)}
 
-    /* ===== モバイル ===== */
+    /* スケルトン */
+    .skeleton{height:16px;background:#f1f5f9;border-radius:6px;margin:8px 0;animation:pulse 1.2s ease-in-out infinite}
+    @keyframes pulse{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
+
+    /* モバイル */
     .mobile-list{display:none}
     @media (max-width:768px){
       table{display:none}
@@ -90,6 +78,7 @@
       .l1{font-size:16px;line-height:1.6;font-weight:700;display:flex;gap:6px;flex-wrap:wrap}
       .l1 .sep{opacity:.6}
       .l2{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
+      .l2 .btn-pill{max-width:40vw}
       .btn{padding:8px 12px;font-size:14px}
       .dm-select-wrap{flex:7 1 0}
       .dm-btn-wrap{flex:3 1 0}
@@ -116,7 +105,7 @@
       </div>
     </div>
 
-    <!-- 弾幕UI 7:3 レイアウト -->
+    <!-- 弾幕UI -->
     <div class="dm-wrap" aria-label="弾幕コピー">
       <div class="dm-select-wrap">
         <select id="dm-select" title="弾幕を選択">
@@ -143,24 +132,23 @@
 
   <script>
     /* ===== 設定 ===== */
-    const BASE = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
+    // ② キャッシュバスター対応・⑥ /macros/ 正規化を行うため API_URL を基点にする
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
     const SHEET_KEY = 'perf';
-    const INITIAL_FETCH = 200;     // 初回は必要十分
-    const HARD_LIMIT = 20000;      // 全件上限
-    const JSONP_TIMEOUT_MS = 2800; // タイムアウトでiframeへ
+    const INITIAL_FETCH = 200;
+    const HARD_LIMIT = 20000;
 
-    const state = { rows: [], total: 0, fetchedLimit: 0, debounce: null, lastReqId: 0, usedIframe: false };
+    const state = { rows: [], total: 0, fetchedLimit: 0, debounce: null };
 
-    /* ===== JSONP コールバック ===== */
+    /* ===== JSONP コールバック（①グローバルへ公開） ===== */
     function onGviz(payload) {
+      __jsonpHit = true; // ⑧ タイムアウト検知用フラグ
       try {
-        if (!payload || !payload.ok || !Array.isArray(payload.rows)) {
+        if (!payload || !Array.isArray(payload.rows)) {
           $('status').textContent = 'データ取得に失敗しました（不正なレスポンス）';
+          clearSkeleton();
           return;
         }
-        // 成功したので以後の iframe フォールバックを抑止
-        state.usedIframe = true;
-
         const rows = payload.rows.map(r => [
           r.artist || '', r.title || '', r.cText || '', r.dText || '', r.cUrl || '', r.dUrl || ''
         ]).filter(([a,b]) => ((a||'')+(b||'')).trim() !== '');
@@ -168,20 +156,16 @@
         state.rows = rows;
         state.total = Number(payload.matched || payload.total || rows.length);
         $('status').textContent = `読み込み完了：${state.rows.length}件（全${state.total}件）`;
+        clearSkeleton();
         render();
       } catch (e) {
         $('status').textContent = '読み込みに失敗しました';
+        clearSkeleton();
         console.error(e);
       }
     }
+    // ① JSONP のためのグローバル関数公開（script 挿入前に必須）
     window.onGviz = onGviz;
-
-    // iframe（?frame=1）→ postMessage 受信ルート
-    window.addEventListener('message', (ev)=>{
-      const d = ev?.data;
-      if (!d || d.type !== 'gviz') return;
-      onGviz(d.payload);
-    });
 
     /* ===== ユーティリティ ===== */
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
@@ -199,7 +183,6 @@
       }catch{ showToast('コピーに失敗しました'); }
     }
 
-    // 弾幕コピー
     $('dm-copy').addEventListener('click', async ()=>{
       const text = $('dm-select').value || '';
       try{
@@ -219,13 +202,27 @@
       return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
     }
 
+    /* ===== スケルトン（⑧ 進捗表示の一部） ===== */
+    function showSkeleton(){
+      const wrap = $('table');
+      wrap.innerHTML = '';
+      for(let i=0;i<6;i++){
+        const sk = document.createElement('div');
+        sk.className = 'skeleton';
+        wrap.appendChild(sk);
+      }
+    }
+    function clearSkeleton(){
+      // skeleton を消してテーブル描画領域を空に戻す
+      $('table').innerHTML = '';
+    }
+
     /* ===== 描画 ===== */
     function render(){
       const tableWrap = $('table'); tableWrap.innerHTML = '';
       const listWrap  = $('mblist'); listWrap.innerHTML = '';
       const hint = $('hint');
 
-      // PC/モバイルを判定し、必ず片側のみ描画
       const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
       const q = normalize($('q').value || '');
@@ -256,7 +253,6 @@
       hint.textContent = '';
 
       if (!isMobile) {
-        /* ==== PC: テーブルのみ ==== */
         const table = document.createElement('table');
         const thead = document.createElement('thead');
         const trh = document.createElement('tr');
@@ -271,13 +267,8 @@
           td=document.createElement('td'); td.textContent=title||''; tr.appendChild(td);
 
           const tdOps=document.createElement('td');
+          const ops=document.createElement('div'); ops.className='ops';
 
-          /* 2行レイアウト（1行目は空、2行目にボタン群） */
-          const wrap=document.createElement('div'); wrap.className='ops-2line';
-          const blank=document.createElement('div'); blank.className='ops-blank'; wrap.appendChild(blank);
-
-          const ops=document.createElement('div'); ops.className='ops-row';
-          // C列リンク（pill）
           const cHref = cUrl || urlFromText(cText);
           if (cHref) {
             const aC=document.createElement('a');
@@ -287,7 +278,7 @@
             aC.textContent=cText||'リンク';
             ops.appendChild(aC);
           }
-          // D列リンク（日付ラベル表示）
+
           const dHref = dUrl || urlFromText(dText);
           const dLabel = formatYmdLabel(dText);
           if (dHref) {
@@ -298,25 +289,19 @@
             aD.textContent=dLabel ? `▶前回${dLabel}` : '▶前回';
             ops.appendChild(aD);
           }
-          // コピー
+
           const btn=document.createElement('button'); btn.className='btn'; btn.textContent='コピー';
           btn.addEventListener('click',()=>copyPair(title,artist));
           ops.appendChild(btn);
 
-          wrap.appendChild(ops);
-          tdOps.appendChild(wrap);
-          tr.appendChild(tdOps);
-
-          tbody.appendChild(tr);
+          tdOps.appendChild(ops); tr.appendChild(tdOps); tbody.appendChild(tr);
         });
         table.appendChild(tbody);
         tableWrap.appendChild(table);
 
-        // PCではモバイルUIを隠す
         listWrap.style.display = 'none';
 
       } else {
-        /* ==== モバイル: 2行カードのみ ==== */
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
           const item=document.createElement('div'); item.className='item';
 
@@ -361,11 +346,56 @@
       }
     }
 
-    /* ===== データ取得（JSONP→失敗時iframe） ===== */
-    function fetchRows(limit){
-      const reqId = ++state.lastReqId;
-      const urlJsonp = `${BASE}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}`;
+    /* ===== JSONP 取得（②キャッシュバスター＋⑥/macros/正規化＋⑧onerror表示） ===== */
+    let __jsonpHit = false; // ⑧ タイムアウト検知フラグ
+
+    function jsonp(url){
       const s=document.createElement('script');
-      s.src=urlJsonp; s.async=true;
-      s.onerror=()=>{ tryIframeFallback(limit, reqId, 'network'); };
-      document.head.appendChild(s
+      s.src=url;
+      s.async=true;
+      s.onerror=()=>{
+        $('status').textContent='データ取得に失敗しました（ネットワーク/ブロック）';
+        clearSkeleton();
+      };
+      document.head.appendChild(s);
+    }
+
+    function fetchRows(limit){
+      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/'); // ⑥
+      const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&v=${Date.now()}`; // ②
+      showSkeleton(); // ⑧ 進捗表示
+      $('status').textContent='読み込み中…';
+      __jsonpHit = false;
+      jsonp(url);
+
+      // ⑧ 4秒で未着なら通知
+      setTimeout(()=>{
+        if(!__jsonpHit){
+          $('status').textContent='データ取得に失敗しました（JSONP未着／API_URLとデプロイ設定を確認）';
+          clearSkeleton();
+        }
+      }, 4000);
+    }
+
+    // 初回：必要十分のみ取得
+    fetchRows(INITIAL_FETCH);
+
+    /* ===== イベント ===== */
+    $('q').addEventListener('input', scheduleSearch);
+    $('limit').addEventListener('change', ()=>{
+      const raw = $('limit').value;
+      if (raw === 'all' && state.fetchedLimit < HARD_LIMIT) {
+        $('status').textContent = '全件を取得しています…';
+        fetchRows(HARD_LIMIT);
+      } else {
+        render();
+      }
+    });
+
+    // 画面幅の変化で再描画（PC/モバイル切替のため）
+    const mq = window.matchMedia('(max-width: 768px)');
+    mq.addEventListener?.('change', render);
+    window.addEventListener('resize', render);
+  </script>
+</body>
+</html>
