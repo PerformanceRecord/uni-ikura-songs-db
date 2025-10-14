@@ -25,12 +25,15 @@
 
     .toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap}
     .limit-wrap{display:flex;align-items:center;gap:6px}
-    .limit-wrap label,.dm-group label{font-size:12px;color:var(--muted);white-space:nowrap}
+    .limit-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
     #limit{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
 
-    .dm-group{display:flex;align-items:center;gap:6px;margin-left:auto}
-    #dm-select{width:auto;min-width:84px;padding:6px 8px;font-size:14px;line-height:1.2}
-    .dm-group .btn{padding:6px 10px;font-size:13px;white-space:nowrap}
+    /* 弾幕UIを7:3でレイアウト（参照版取り込み） */
+    .dm-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
+    .dm-select-wrap{flex:7 1 0}
+    .dm-btn-wrap{flex:3 1 0;display:flex}
+    #dm-select{width:100%;padding:6px 10px;font-size:14px;line-height:1.2}
+    .btn-full{width:100%}
 
     input[type="search"],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:15px;background:#fff;color:var(--text);outline:none}
     input[type="search"]:focus,select:focus,.btn:focus,.btn-pill:focus{outline:3px solid var(--focus);outline-offset:2px}
@@ -49,25 +52,24 @@
     th:nth-child(2),td:nth-child(2){width:50%}
     th:nth-child(3),td:nth-child(3){width:20%}
 
-    /* 操作列は常に1行に固定（折返し禁止） */
+    /* 操作列は常に1行固定（省略つき） */
     .ops{
       display:flex;align-items:center;justify-content:flex-end;gap:8px;
       flex-wrap:nowrap;min-width:0;overflow:hidden;
     }
     .ops > *{white-space:nowrap;flex:0 0 auto}
-    .ops .btn-pill,
-    .ops .btn{font-size:11pt}
+    .ops .btn-pill, .ops .btn{font-size:11pt}
 
-    /* 囲みリンクは省略表示を許可（1行固定） */
+    /* pillリンクは省略表示に対応（1行固定） */
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
       border-radius:10px;padding:8px 12px;line-height:1.2;text-decoration:none;
-      white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis
+      white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis
     }
     .btn-pill:hover{background:#eef2f7;text-decoration:none}
     .btn-pill:active{transform:translateY(1px)}
 
-    /* モバイルUI */
+    /* モバイル */
     .mobile-list{display:none}
     @media (max-width:768px){
       table{display:none}
@@ -78,6 +80,8 @@
       .l2{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
       .l2 .btn-pill{max-width:40vw}
       .btn{padding:8px 12px;font-size:14px}
+      .dm-select-wrap{flex:7 1 0}
+      .dm-btn-wrap{flex:3 1 0}
     }
   </style>
 </head>
@@ -99,14 +103,18 @@
           <option value="all">全件</option>
         </select>
       </div>
+    </div>
 
-      <div class="dm-group" aria-label="弾幕コピー">
-        <label for="dm-select">弾幕</label>
+    <!-- 弾幕UI 7:3 レイアウト -->
+    <div class="dm-wrap" aria-label="弾幕コピー">
+      <div class="dm-select-wrap">
         <select id="dm-select" title="弾幕を選択">
           <option value="🍣🧡🍣🧡🍣🧡">🍣🧡🍣</option>
           <option value="🍣🧡🎶🍣🧡🎶">🍣🧡🎶</option>
         </select>
-        <button id="dm-copy" class="btn" type="button" title="選択した弾幕をコピー">コピー</button>
+      </div>
+      <div class="dm-btn-wrap">
+        <button id="dm-copy" class="btn btn-full" type="button" title="選択した弾幕をコピー">コピー</button>
       </div>
     </div>
 
@@ -117,7 +125,7 @@
   <div class="card" style="margin-top:12px;">
     <div class="muted" id="hint">検索結果がここに表示されます。</div>
     <div id="table"></div>
-    <div id="mblist" class="mobile-list"></div>
+    <div id="mblist" class="mobile-list" style="display:none;"></div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite">コピーしました</div>
@@ -126,20 +134,20 @@
     /* ===== 設定 ===== */
     const BASE = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
     const SHEET_KEY = 'perf';
-    const INITIAL_FETCH = 200;
-    const HARD_LIMIT = 20000;
-    const JSONP_TIMEOUT_MS = 2800;
+    const INITIAL_FETCH = 200;     // 初回は必要十分
+    const HARD_LIMIT = 20000;      // 全件上限
+    const JSONP_TIMEOUT_MS = 2800; // タイムアウトでiframeへ
 
     const state = { rows: [], total: 0, fetchedLimit: 0, debounce: null, lastReqId: 0, usedIframe: false };
 
-    /* ===== JSONPコールバック ===== */
+    /* ===== JSONP コールバック ===== */
     function onGviz(payload) {
       try {
         if (!payload || !payload.ok || !Array.isArray(payload.rows)) {
           $('status').textContent = 'データ取得に失敗しました（不正なレスポンス）';
           return;
         }
-        // 成功したので以後の iframe フォールバックは抑止
+        // 成功したので以後の iframe フォールバックを抑止
         state.usedIframe = true;
 
         const rows = payload.rows.map(r => [
@@ -157,7 +165,7 @@
     }
     window.onGviz = onGviz;
 
-    // iframe（?frame=1）からの postMessage
+    // iframe（?frame=1）→ postMessage 受信ルート
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
@@ -168,6 +176,7 @@
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
     function scheduleSearch(){ clearTimeout(state.debounce); state.debounce = setTimeout(render, 160); }
     function $(id){ return document.getElementById(id); }
+
     function showToast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
 
     async function copyPair(title, artist){
@@ -205,7 +214,7 @@
       const listWrap  = $('mblist'); listWrap.innerHTML = '';
       const hint = $('hint');
 
-      // PC/モバイルを判定（768px以下はモバイル）
+      // PC/モバイルを判定し、必ず片側のみ描画
       const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
       const q = normalize($('q').value || '');
@@ -236,14 +245,11 @@
       hint.textContent = '';
 
       if (!isMobile) {
-        // ==== PC: テーブルのみ ====
+        /* ==== PC: テーブルのみ ==== */
         const table = document.createElement('table');
-
         const thead = document.createElement('thead');
         const trh = document.createElement('tr');
-        ['アーティスト名','曲名','操作'].forEach(h=>{
-          const th=document.createElement('th'); th.textContent=h; trh.appendChild(th);
-        });
+        ['アーティスト名','曲名','操作'].forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trh.appendChild(th); });
         thead.appendChild(trh); table.appendChild(thead);
 
         const tbody = document.createElement('tbody');
@@ -256,6 +262,7 @@
           const tdOps=document.createElement('td');
           const ops=document.createElement('div'); ops.className='ops';
 
+          // C列リンク（pill + 省略）
           const cHref = cUrl || urlFromText(cText);
           if (cHref) {
             const aC=document.createElement('a');
@@ -266,6 +273,7 @@
             ops.appendChild(aC);
           }
 
+          // D列リンク（現行仕様：日付ラベルを表示）
           const dHref = dUrl || urlFromText(dText);
           const dLabel = formatYmdLabel(dText);
           if (dHref) {
@@ -277,6 +285,7 @@
             ops.appendChild(aD);
           }
 
+          // コピー
           const btn=document.createElement('button'); btn.className='btn'; btn.textContent='コピー';
           btn.addEventListener('click',()=>copyPair(title,artist));
           ops.appendChild(btn);
@@ -286,10 +295,11 @@
         table.appendChild(tbody);
         tableWrap.appendChild(table);
 
-        // PCではモバイル用は非表示（※21行目問題の回避）
+        // PCではモバイルUIを隠す（21行目問題の根絶）
         listWrap.style.display = 'none';
+
       } else {
-        // ==== モバイル: 2行カードのみ ====
+        /* ==== モバイル: 2行カードのみ ==== */
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
           const item=document.createElement('div'); item.className='item';
 
@@ -330,7 +340,7 @@
           listWrap.appendChild(item);
         });
 
-        listWrap.style.display = 'block';
+        listWrap.style.display='block';
       }
     }
 
@@ -369,7 +379,7 @@
       document.body.appendChild(f);
     }
 
-    // 初回取得
+    // 初回：必要十分のみ取得
     fetchRows(INITIAL_FETCH);
 
     /* ===== イベント ===== */
@@ -384,7 +394,7 @@
       }
     });
 
-    // ブレークポイント変化に追従（PC/モバイル切替）
+    // 画面幅の変化で再描画（PC/モバイル切替のため）
     const mq = window.matchMedia('(max-width: 768px)');
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
