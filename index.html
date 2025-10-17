@@ -69,6 +69,9 @@
       display:flex;gap:8px;align-items:center;justify-content:flex-end; /* 右寄せ */
       flex-wrap:wrap;overflow:visible;min-width:0
     }
+    /* —— 罫線の重複を解消（上段の下線を消す） —— */
+    table.stacked .item-top td { border-bottom: none !important; }
+    table.stacked .item-ops td { border-top: none; }
 
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
@@ -384,6 +387,10 @@
       const reqId = ++state.lastReqId;
       state.currentAttempt = attempt;
 
+      /* 旧フォールバック表示を必ずクリア */
+      const st0 = $('status');
+      if (st0) delete st0.dataset.fallback;
+
       /* 新規取得前に古いiframe監視を確実に停止 */
       if (state.iframeTimer) {
         clearTimeout(state.iframeTimer);
@@ -408,7 +415,6 @@
 
         clearTimeout(state.shortTimer);
         clearTimeout(state.globalTimer);
-        // ※ iframeTimer はこのリクエストのものだけ解除する（後で判定）
 
         try{
           if (!payload || !Array.isArray(payload.rows)) {
@@ -441,6 +447,8 @@
           cleanupJsonpScripts(reqId);
           state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
 
+          // フォールバック表示フラグを確実に解除
+          const st2 = $('status'); if (st2) delete st2.dataset.fallback;
           $('status').textContent = `読み込み完了：${state.rows.length}件（全${state.total}件）`;
           clearSkeleton();
           render();
@@ -470,6 +478,7 @@
       if (state.usedIframe) return;
       state.usedIframe = true;
       $('status').textContent = `別ルートで取得中…（${reason}）`;
+      const st = $('status'); if (st) st.dataset.fallback = '1';
 
       const old = document.getElementById('gviz-frame');
       if (old) old.remove();
@@ -492,6 +501,7 @@
         if (!state.usedIframe) return;           // 既にiframe経路は閉じている
         if ((state.rows && state.rows.length) > 0) return; // 既に描画済み
 
+        const st3 = $('status'); if (st3) delete st3.dataset.fallback;
         $('status').textContent = '取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）';
         const g = document.getElementById('gviz-frame'); if (g) g.remove();
         state.usedIframe = false;
@@ -502,6 +512,11 @@
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
+      // フォールバック表示が残っていたら即座に中立化
+      const st = $('status');
+      if (st?.dataset?.fallback === '1') {
+        st.textContent = 'データを受信しました…';
+      }
       if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
 
