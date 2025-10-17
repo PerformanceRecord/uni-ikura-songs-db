@@ -53,9 +53,9 @@
     /* デスクトップ：行分割（上段=情報 下段=操作） */
     table.stacked{table-layout:auto}
     table.stacked th, table.stacked td{width:auto !important}
-    table.stacked .item-top{background:#fff;border-bottom:none}         /* ← 上段の下線を消す */
+    table.stacked .item-top{background:#fff;border-bottom:none}
     table.stacked .item-ops{background:#fff}
-    table.stacked .item-ops td{border-top:none}                         /* ← 下段の上線も消す（1本線化） */
+    table.stacked .item-ops td{border-top:none}
     table.stacked .item-top .l1{
       font-size:16px;font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start
     }
@@ -280,7 +280,7 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
-          /* 1行目：アーティスト／曲名（上段の下線なし） */
+          /* 1行目：楽曲情報 */
           const trTop = document.createElement('tr'); trTop.className='item-top';
           const tdTop = document.createElement('td'); tdTop.colSpan = 3;
           tdTop.style.borderBottom = 'none';
@@ -292,7 +292,7 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          /* 2行目：操作（フル幅・右寄せ、上線なし） */
+          /* 2行目：操作列 */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
           const tdOps = document.createElement('td'); tdOps.colSpan = 3;
           tdOps.style.borderTop = 'none';
@@ -331,7 +331,7 @@
         $('mblist').style.display = 'none';
 
       } else {
-        /* —— モバイル従来表示 —— */
+        /* —— モバイル表示 —— */
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
           const item=document.createElement('div'); item.className='item';
 
@@ -413,7 +413,7 @@
       let settled = false;
 
       state.pendingHandler = (payload)=>{
-        // 成功/受信時：まずフォールバックUIは必ず解除
+        // 成功/受信時：フォールバックUIを解除
         setStatus($('status')?.textContent || '', { fallback:false });
 
         if (settled) return;
