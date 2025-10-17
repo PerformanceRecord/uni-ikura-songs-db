@@ -69,8 +69,9 @@
       display:flex;gap:8px;align-items:center;justify-content:flex-end; /* 右寄せ */
       flex-wrap:wrap;overflow:visible;min-width:0
     }
-    /* stacked表示：上段の罫線を消す（ペア間に1本だけ残す） */
-    table.stacked tbody tr.item-top td{border-bottom:none}
+    /* —— 罫線の重複を解消（上段の下線を消す） —— */
+    table.stacked .item-top td { border-bottom: none !important; }
+    table.stacked .item-ops td { border-top: none; }
 
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
@@ -227,9 +228,9 @@
 
     /* 描画 */
     function render(){
-      // 念のため：描画時に fallback ラベルが残っていたら外す
-      const st = $('status');
-      if (st?.dataset?.fallback === '1') delete st.dataset.fallback;
+      /* 念のため：描画時に fallback ラベルが残っていたら外す */
+      const stRender = $('status');
+      if (stRender?.dataset?.fallback === '1') delete stRender.dataset.fallback;
 
       const tableWrap = $('table'); tableWrap.innerHTML = '';
       const listWrap  = $('mblist'); listWrap.innerHTML = '';
@@ -277,7 +278,7 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
-          /* 1行目：アーティスト／曲名（罫線なし） */
+          /* 1行目：アーティスト／曲名（下線はCSSで消す） */
           const trTop = document.createElement('tr'); trTop.className='item-top';
           const tdTop = document.createElement('td'); tdTop.colSpan = 3;
           const l1 = document.createElement('div'); l1.className='l1';
@@ -288,7 +289,7 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          /* 2行目：操作（フル幅・右寄せ／ここだけ下線が残る） */
+          /* 2行目：操作（フル幅・右寄せ） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
           const tdOps = document.createElement('td'); tdOps.colSpan = 3;
           const ops = document.createElement('div'); ops.className='ops';
@@ -390,7 +391,11 @@
       const reqId = ++state.lastReqId;
       state.currentAttempt = attempt;
 
-      /* 新規取得前に古いiframe監視を確実に停止＆フラグも初期化 */
+      /* 旧フォールバック表示を必ずクリア */
+      const st0 = $('status');
+      if (st0?.dataset?.fallback) delete st0.dataset.fallback;
+
+      /* 新規取得前に古いiframe監視を確実に停止 */
       if (state.iframeTimer) {
         clearTimeout(state.iframeTimer);
         state.iframeTimer = null;
@@ -398,13 +403,11 @@
       }
       const prev = document.getElementById('gviz-frame');
       if (prev) prev.remove();
-      const st0 = $('status');
-      if (st0?.dataset?.fallback === '1') delete st0.dataset.fallback;
 
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
-      $('status').textContent = attempt===0 ? '読み込み中…' : `接続中…（${attempt}）`;
+      $('status').textContent = attempt===0 ? '読み込み中…' : `再試行中…（${attempt}）`;
       showSkeleton();
 
       let settled = false;
@@ -412,16 +415,15 @@
       state.pendingHandler = (payload)=>{
         if (settled) return;
 
-        /* 後着でも「fallback 文言の解除」だけは行う */
+        /* 後着/別経路の受信でもフォールバック表示だけは必ず解除 */
         const stClear = $('status');
         if (stClear?.dataset?.fallback === '1') delete stClear.dataset.fallback;
 
-        if (reqId !== state.lastReqId) return; // 後着パケットはここで終了
+        if (reqId !== state.lastReqId) return; // 後着パケット防止
         settled = true;
 
         clearTimeout(state.shortTimer);
         clearTimeout(state.globalTimer);
-        // iframeTimer はこのreqIdのものだけ解除（後で判定）
 
         try{
           if (!payload || !Array.isArray(payload.rows)) {
@@ -444,6 +446,7 @@
           if (f) f.remove();
           state.usedIframe = false;
 
+          // このreqId由来のウォッチドッグだけ止める
           if (state.iframeReqId === reqId && state.iframeTimer) {
             clearTimeout(state.iframeTimer);
           }
@@ -453,6 +456,7 @@
           cleanupJsonpScripts(reqId);
           state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
 
+          // 念のためもう一度フォールバック解除
           const st2 = $('status'); if (st2?.dataset?.fallback === '1') delete st2.dataset.fallback;
           $('status').textContent = `読み込み完了：${state.rows.length}件（全${state.total}件）`;
           clearSkeleton();
@@ -482,10 +486,8 @@
     function tryIframeFallback(limit, reqId, reason){
       if (state.usedIframe) return;
       state.usedIframe = true;
-
-      const st = $('status');
-      st.textContent = `別ルートで取得中…（${reason}）`;
-      st.dataset.fallback = '1';              /* ★ フォールバック中フラグを明示 */
+      $('status').textContent = `別ルートで取得中…（${reason}）`;
+      const st = $('status'); if (st) st.dataset.fallback = '1';
 
       const old = document.getElementById('gviz-frame');
       if (old) old.remove();
@@ -503,15 +505,16 @@
       clearTimeout(state.iframeTimer);
       state.iframeReqId = reqId;
       state.iframeTimer = setTimeout(()=>{
-        /* 自分が最新の要求・フォールバック継続中・未描画のときだけ発火 */
-        if (state.lastReqId !== reqId) return;
-        if (!state.usedIframe) return;
-        if ((state.rows && state.rows.length) > 0) return;
-        const st2 = $('status');
-        if (!st2?.dataset?.fallback) return; /* 既に解除済みなら何もしない */
+        // 自分が最新の要求かつiframe待ち中のみ発火
+        if (state.lastReqId !== reqId) return;   // 古い要求
+        if (!state.usedIframe) return;           // 既にiframe経路は閉じている
+        if ((state.rows && state.rows.length) > 0) return; // 既に描画済み
 
-        delete st2.dataset.fallback;  /* ★ 解除 */
-        st2.textContent = '取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）';
+        const st3 = $('status');
+        if (!st3?.dataset?.fallback) return;    // フォールバック状態でないなら触らない
+
+        delete st3.dataset.fallback;
+        st3.textContent = '取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）';
         const g = document.getElementById('gviz-frame'); if (g) g.remove();
         state.usedIframe = false;
         clearSkeleton();
@@ -522,12 +525,17 @@
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
 
-      /* postMessage 受信時点でフォールバックフラグを必ず落とす */
+      /* —— 重要：経路に関係なくフォールバック表示を即時解除し、監視を停止 —— */
       const st = $('status');
-      if (st?.dataset?.fallback === '1') {
-        delete st.dataset.fallback;
-        st.textContent = 'データを受信しました…';
-      }
+      if (st?.dataset?.fallback === '1') delete st.dataset.fallback;
+      // タイマーと状態を無条件に解除（reqId一致に依存しない）
+      if (state.iframeTimer) { clearTimeout(state.iframeTimer); state.iframeTimer = null; }
+      state.iframeReqId = null;
+      state.usedIframe = false;
+      const g = document.getElementById('gviz-frame'); if (g) g.remove();
+      // 一時メッセージにしておく（すぐ render が上書き）
+      st.textContent = 'データを受信しました…';
+
       if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
 
