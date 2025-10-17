@@ -53,6 +53,7 @@
     /* デスクトップ：行分割（上段=情報 下段=操作） */
     table.stacked{table-layout:auto}
     table.stacked th, table.stacked td{width:auto !important}
+    table.stacked thead th{width:100% !important;display:table-cell;white-space:nowrap}
     table.stacked .item-top{background:#fff;border-bottom:none}
     table.stacked .item-ops{background:#fff}
     table.stacked .item-ops td{border-top:none}
@@ -130,7 +131,7 @@
     <div class="muted" id="status" role="status" aria-live="polite">読み込み中…</div>
   </div>
 
-<!-- 結果表示 -->
+  <!-- 結果表示 -->
   <div class="card" style="margin-top:12px;">
     <div class="muted" id="hint">検索結果がここに表示されます。</div>
     <div id="table" style="display:none;"></div>
@@ -236,6 +237,10 @@
       const listWrap  = $('mblist'); listWrap.innerHTML = '';
       const hint = $('hint');
 
+      // いったん両方非表示（FOUC防止）
+      tableWrap.style.display = 'none';
+      listWrap.style.display  = 'none';
+
       const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
       const q = normalize($('q').value || '');
@@ -262,7 +267,6 @@
 
       if (rows.length === 0) {
         hint.textContent = q ? '該当なし' : '検索結果がここに表示されます。';
-        listWrap.style.display = 'none';
         return;
       }
       hint.textContent = '';
@@ -280,7 +284,7 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
-          /* 1行目：楽曲情報 */
+          /* 1行目：楽曲情報（下線なし） */
           const trTop = document.createElement('tr'); trTop.className='item-top';
           const tdTop = document.createElement('td'); tdTop.colSpan = 3;
           tdTop.style.borderBottom = 'none';
@@ -292,7 +296,7 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          /* 2行目：操作列 */
+          /* 2行目：操作（上線なし・右寄せ） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
           const tdOps = document.createElement('td'); tdOps.colSpan = 3;
           tdOps.style.borderTop = 'none';
@@ -328,6 +332,7 @@
 
         table.appendChild(tbody);
         tableWrap.appendChild(table);
+        tableWrap.style.display = 'block';
         $('mblist').style.display = 'none';
 
       } else {
@@ -373,6 +378,7 @@
         });
 
         $('mblist').style.display='block';
+        $('table').style.display='none';
       }
     }
 
