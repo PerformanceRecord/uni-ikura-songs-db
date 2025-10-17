@@ -53,7 +53,7 @@
     /* デスクトップ：行分割（上段=情報 下段=操作） */
     table.stacked{table-layout:auto}
     table.stacked th, table.stacked td{width:auto !important}
-    table.stacked thead th{width:100% !important;display:table-cell;white-space:nowrap}
+    table.stacked thead th{width:100% !important; white-space:nowrap} /* display の指定は既定なので不要 */
     table.stacked .item-top{background:#fff;border-bottom:none}
     table.stacked .item-ops{background:#fff}
     table.stacked .item-ops td{border-top:none}
@@ -156,7 +156,7 @@
       rows: [], total: 0, fetchedLimit: 0, debounce: null,
       lastReqId: 0, usedIframe: false,
       pendingHandler: null,
-      globalTimer: null, shortTimer: null, currentAttempt: 0,
+      globalTimer: null, shortTimer: null,
       iframeTimer: null, iframeReqId: null
     };
 
@@ -168,11 +168,14 @@
       if (opts.fallback) el.dataset.fallback = '1';
       else delete el.dataset.fallback;
     }
+    function clearFallbackFlag(){
+      const el = $('status'); if(el) delete el.dataset.fallback;
+    }
 
     /* JSONP コールバック */
     window.onGviz = function(payload){
-      // 受信したらまずフォールバック表示は必ず解除
-      setStatus($('status')?.textContent || '', { fallback:false });
+      // 受信したらフォールバック表示は必ず解除
+      clearFallbackFlag();
       if (typeof state.pendingHandler === 'function') state.pendingHandler(payload);
     };
 
@@ -231,7 +234,7 @@
     /* 描画 */
     function render(){
       // 描画開始時にフォールバック表示は念のため解除
-      setStatus($('status')?.textContent || '', { fallback:false });
+      clearFallbackFlag();
 
       const tableWrap = $('table'); tableWrap.innerHTML = '';
       const listWrap  = $('mblist'); listWrap.innerHTML = '';
@@ -286,7 +289,7 @@
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
           /* 1行目：楽曲情報（下線なし） */
           const trTop = document.createElement('tr'); trTop.className='item-top';
-          const tdTop = document.createElement('td'); tdTop.colSpan = 3;
+          const tdTop = document.createElement('td');
           tdTop.style.borderBottom = 'none';
           const l1 = document.createElement('div'); l1.className='l1';
           const a1 = document.createElement('span'); a1.className='artist'; a1.textContent=artist||'';
@@ -298,7 +301,7 @@
 
           /* 2行目：操作（上線なし・右寄せ） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
-          const tdOps = document.createElement('td'); tdOps.colSpan = 3;
+          const tdOps = document.createElement('td');
           tdOps.style.borderTop = 'none';
           const ops = document.createElement('div'); ops.className='ops';
 
@@ -378,7 +381,6 @@
         });
 
         $('mblist').style.display='block';
-        $('table').style.display='none';
       }
     }
 
@@ -399,7 +401,6 @@
 
     function fetchRows(limit, attempt=0){
       const reqId = ++state.lastReqId;
-      state.currentAttempt = attempt;
 
       /* 新規取得前に古いiframe監視を停止＆DOM掃除 */
       if (state.iframeTimer) {
@@ -420,7 +421,7 @@
 
       state.pendingHandler = (payload)=>{
         // 成功/受信時：フォールバックUIを解除
-        setStatus($('status')?.textContent || '', { fallback:false });
+        clearFallbackFlag();
 
         if (settled) return;
         if (reqId !== state.lastReqId) return; // 後着パケット防止
@@ -526,7 +527,7 @@
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
       // 受信時はまずフォールバック解除（文言が残らないように）
-      setStatus($('status')?.textContent || '', { fallback:false });
+      clearFallbackFlag();
       if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
 
@@ -538,7 +539,7 @@
     document.addEventListener('visibilitychange', ()=>{
       if (document.visibilityState === 'visible') {
         if ($('status')?.dataset?.fallback && (state.rows && state.rows.length)>0) {
-          setStatus($('status').textContent, {fallback:false});
+          clearFallbackFlag();
         }
       }
     });
@@ -547,9 +548,9 @@
     fetchRows(INITIAL_FETCH);
 
     /* イベント */
-    $('q').addEventListener('input', scheduleSearch);
-    $('limit').addEventListener('change', ()=>{
-      const raw = $('limit').value;
+    document.getElementById('q').addEventListener('input', scheduleSearch);
+    document.getElementById('limit').addEventListener('change', ()=>{
+      const raw = document.getElementById('limit').value;
       if (raw === 'all' && (state.fetchedLimit||0) < (state.total||HARD_LIMIT)) {
         setStatus('全件を取得しています…', {fallback:false});
         fetchRows(HARD_LIMIT);
