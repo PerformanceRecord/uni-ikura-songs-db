@@ -51,18 +51,28 @@
     table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:15px;vertical-align:top}
     th{position:sticky;top:0;background:var(--thead);z-index:1;font-weight:700}
-    th:nth-child(1),td:nth-child(1){width:30%}
-    th:nth-child(2),td:nth-child(2){width:50%}
-    th:nth-child(3),td:nth-child(3){width:20%}
+    /* 列幅：操作列は画面に応じて可変（途中折れ防止との両立） */
+    th:nth-child(1),td:nth-child(1){width:26%}
+    th:nth-child(2),td:nth-child(2){width:38%}
+    th:nth-child(3),td:nth-child(3){width:clamp(28%, 36%, 40%)}
 
-    .ops{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap;min-width:0;overflow:hidden}
+    .ops{
+      display:flex;align-items:center;gap:8px;
+      justify-content:flex-start;
+      flex-wrap:wrap;
+      overflow:visible; /* 見切れ防止 */
+      min-width:0;
+    }
     .ops > *{white-space:nowrap;flex:0 0 auto}
     .ops .btn-pill, .ops .btn{font-size:11pt}
 
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
       border-radius:10px;padding:8px 12px;line-height:1.2;text-decoration:none;
-      white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis
+      white-space:nowrap;
+      word-break:keep-all;       /* 日本語の途中改行を防ぐ */
+      max-width:unset;           /* PCは上限解除（モバイルは後述で制限） */
+      overflow:hidden;text-overflow:ellipsis
     }
     .btn-pill:hover{background:#eef2f7;text-decoration:none}
     .btn-pill:active{transform:translateY(1px)}
@@ -80,7 +90,7 @@
       .l1{font-size:16px;line-height:1.6;font-weight:700;display:flex;gap:6px;flex-wrap:wrap}
       .l1 .sep{opacity:.6}
       .l2{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
-      .l2 .btn-pill{max-width:40vw}
+      .l2 .btn-pill{max-width:40vw} /* モバイルは幅を制限 */
       .btn{padding:8px 12px;font-size:14px}
       .dm-select-wrap{flex:7 1 0}
       .dm-btn-wrap{flex:3 1 0}
@@ -134,26 +144,25 @@
 
   <script>
     /* ===== 設定 ===== */
-    // 安定URLを基点にし、authuser=0 とキャッシュバスターを付与します
     const API_URL = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
     const SHEET_KEY = 'perf';
     const INITIAL_FETCH = 200;
     const HARD_LIMIT = 20000;
 
-    // JSONP の最終監視タイムアウト（サーバ遅延に合わせて長め）
     const JSONP_TIMEOUT_MS = 6500;
-    // 短い間隔での軽リトライ（JSONP 2回まで）→ それでもダメなら iframe
     const SHORT_TRY_MS = 1500;
     const MAX_RETRY = 2;
+    const IFRAME_WATCHDOG_MS = 10000; // 可変化：環境に応じて伸ばせる
 
     const state = {
       rows: [], total: 0, fetchedLimit: 0, debounce: null,
       lastReqId: 0, usedIframe: false,
-      pendingHandler: null, // 直近リクエスト専用の onGviz ハンドラ
-      globalTimer: null, shortTimer: null, currentAttempt: 0
+      pendingHandler: null,
+      globalTimer: null, shortTimer: null, currentAttempt: 0,
+      iframeTimer: null
     };
 
-    /* ===== JSONP コールバック（グローバル公開・最新ハンドラだけを実行） ===== */
+    /* ===== JSONP コールバック（最新ハンドラだけを実行） ===== */
     window.onGviz = function(payload){
       if (typeof state.pendingHandler === 'function') {
         state.pendingHandler(payload);
@@ -164,7 +173,6 @@
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
     function scheduleSearch(){ clearTimeout(state.debounce); state.debounce = setTimeout(render, 160); }
     function $(id){ return document.getElementById(id); }
-
     function showToast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
 
     async function copyPair(title, artist){
@@ -176,7 +184,6 @@
       }catch{ showToast('コピーに失敗しました'); }
     }
 
-    // 弾幕コピー
     $('dm-copy').addEventListener('click', async ()=>{
       const text = $('dm-select').value || '';
       try{
@@ -290,7 +297,7 @@
         table.appendChild(tbody);
         tableWrap.appendChild(table);
 
-        listWrap.style.display = 'none';
+        $('mblist').style.display = 'none';
 
       } else {
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
@@ -330,10 +337,10 @@
           l2.appendChild(btn);
 
           item.appendChild(l1); item.appendChild(l2);
-          listWrap.appendChild(item);
+          $('mblist').appendChild(item);
         });
 
-        listWrap.style.display='block';
+        $('mblist').style.display='block';
       }
     }
 
@@ -350,22 +357,21 @@
       const reqId = ++state.lastReqId;
       state.currentAttempt = attempt;
 
-      // /macros/u/... を安定な /macros/ に正規化
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
-      // ステータス表示とスケルトン
       $('status').textContent = attempt===0 ? '読み込み中…' : `再試行中…（${attempt}）`;
       showSkeleton();
 
       let settled = false;
 
-      // このリクエスト専用の onGviz ハンドラを設定（後から来た応答も最新ハンドラで処理される）
       state.pendingHandler = (payload)=>{
         if (settled) return;
         settled = true;
+
         clearTimeout(state.shortTimer);
         clearTimeout(state.globalTimer);
+        clearTimeout(state.iframeTimer);
 
         try{
           if (!payload || !Array.isArray(payload.rows)) {
@@ -380,7 +386,19 @@
             .filter(([a,b]) => ((a||'')+(b||'')).trim() !== '');
 
           state.rows = rows;
-          state.total = Number(payload.matched || payload.total || rows.length);
+          // total を最優先、なければ matched、なければ rows.length
+          state.total = Number(
+            (payload.total ?? null) != null ? payload.total :
+            (payload.matched ?? rows.length)
+          );
+
+          // 成功時の後始末と状態更新
+          const f = document.getElementById('gviz-frame');
+          if (f) f.remove();
+          state.usedIframe = false;
+          clearTimeout(state.iframeTimer);
+          state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
+
           $('status').textContent = `読み込み完了：${state.rows.length}件（全${state.total}件）`;
           clearSkeleton();
           render();
@@ -391,27 +409,18 @@
         }
       };
 
-      // 短いタイムアウトで軽リトライ
       state.shortTimer = setTimeout(()=>{
         if (settled) return;
-        if (attempt < MAX_RETRY) {
-          fetchRows(limit, attempt+1);
-        }
-        // ここではまだ iframe へは落とさない（最終監視で判断）
+        if (attempt < MAX_RETRY) fetchRows(limit, attempt+1);
       }, SHORT_TRY_MS);
 
-      // 最終監視（サーバ遅延想定の長めタイムアウト）
+      // ここで settled にしない。フォールバック結果を pendingHandler に流す。
       state.globalTimer = setTimeout(()=>{
         if (settled) return;
-        settled = true;
-        // 最後の手段：iframe フォールバック
         tryIframeFallback(limit, reqId, 'jsonp-timeout');
       }, JSONP_TIMEOUT_MS);
 
-      // JSONP 実行
-      jsonpOnce(url, ()=>{
-        // ネットワーク即時エラーなら短リトライルートに乗る
-      });
+      jsonpOnce(url, ()=>{ /* 即時エラーは短リトライに委譲 */ });
     }
 
     function tryIframeFallback(limit, reqId, reason){
@@ -419,37 +428,45 @@
       state.usedIframe = true;
       $('status').textContent = `別ルートで取得中…（${reason}）`;
 
-      // 既存 iframe を片付け
       const old = document.getElementById('gviz-frame');
       if (old) old.remove();
 
-      // iframe 埋め込み（?frame=1 は GS 側で postMessage にフォールバック可能）
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
-      const urlFrame = `${base}?frame=1&callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
+      // frame=1 は GAS 側で「親へ postMessage するブリッジHTML」を返す実装
+      const urlFrame = `${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
+
       const f = document.createElement('iframe');
       f.id = 'gviz-frame';
       f.src = urlFrame;
       f.style.display = 'none';
       f.width = 0; f.height = 0; f.tabIndex = -1;
       document.body.appendChild(f);
+
+      // ★ ウォッチドッグ：一定時間内に postMessage が来なければ失敗を明示し、再試行可能に戻す
+      clearTimeout(state.iframeTimer);
+      state.iframeTimer = setTimeout(()=>{
+        $('status').textContent = '取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）';
+        clearSkeleton();
+        state.usedIframe = false; // 次の操作で再度フォールバックできるよう解除
+      }, IFRAME_WATCHDOG_MS);
     }
 
-    // iframe（?frame=1）→ postMessage 受信ルート
+    // iframe（?frame=1）→ postMessage 受信
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
-      // iframe 側からの payload も最新ハンドラで処理
       if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
 
-    // 初回：必要十分のみ取得（短リトライ→最終的に iframe）
+    // 初回
     fetchRows(INITIAL_FETCH);
 
     /* ===== イベント ===== */
     $('q').addEventListener('input', scheduleSearch);
     $('limit').addEventListener('change', ()=>{
       const raw = $('limit').value;
-      if (raw === 'all' && state.fetchedLimit < HARD_LIMIT) {
+      // ★ 全件が未取得のときのみ追加フェッチ
+      if (raw === 'all' && (state.fetchedLimit||0) < (state.total||HARD_LIMIT)) {
         $('status').textContent = '全件を取得しています…';
         fetchRows(HARD_LIMIT);
       } else {
@@ -457,7 +474,6 @@
       }
     });
 
-    // 画面幅の変化で再描画（PC/モバイル切替のため）
     const mq = window.matchMedia('(max-width: 768px)');
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
