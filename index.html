@@ -14,8 +14,7 @@
   <style>
     :root{
       --bg:#ffb744; --card:#ffffff; --text:#1a1a1a; --muted:#6b7280; --line:#e5e7eb;
-      --thead:#ffe0b5; --focus:#3897c9; --chip-bg:#f3f4f6; --chip-text:#111827;
-      --link:#2563eb; --pill-bg:#f6f7f9;
+      --thead:#ffe0b5; --focus:#3897c9; --pill-bg:#f6f7f9; --link:#2563eb;
     }
     *{box-sizing:border-box}
     body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;line-height:1.7;margin:12px}
@@ -51,16 +50,12 @@
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:15px;vertical-align:top}
     th{position:sticky;top:0;background:var(--thead);z-index:1;font-weight:700}
 
-    /* 旧3列幅指定（モバイル非表示／デスクトップの stacked では無効化） */
-    th:nth-child(1),td:nth-child(1){width:26%}
-    th:nth-child(2),td:nth-child(2){width:38%}
-    th:nth-child(3),td:nth-child(3){width:clamp(28%, 36%, 40%)}
-
-    /* デスクトップ用：行分割スタイル（table.stacked） */
+    /* デスクトップ：行分割（上段=情報 下段=操作） */
     table.stacked{table-layout:auto}
     table.stacked th, table.stacked td{width:auto !important}
-    table.stacked .item-top{background:#fff}
+    table.stacked .item-top{background:#fff;border-bottom:none}         /* ← 上段の下線を消す */
     table.stacked .item-ops{background:#fff}
+    table.stacked .item-ops td{border-top:none}                         /* ← 下段の上線も消す（1本線化） */
     table.stacked .item-top .l1{
       font-size:16px;font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start
     }
@@ -69,9 +64,6 @@
       display:flex;gap:8px;align-items:center;justify-content:flex-end; /* 右寄せ */
       flex-wrap:wrap;overflow:visible;min-width:0
     }
-    /* —— 罫線の重複を解消（上段の下線を消す） —— */
-    table.stacked .item-top td { border-bottom: none !important; }
-    table.stacked .item-ops td { border-top: none; }
 
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
@@ -164,19 +156,28 @@
       lastReqId: 0, usedIframe: false,
       pendingHandler: null,
       globalTimer: null, shortTimer: null, currentAttempt: 0,
-      iframeTimer: null,
-      iframeReqId: null
+      iframeTimer: null, iframeReqId: null
     };
+
+    /* ========= 共通: ステータス更新 ========= */
+    function $(id){ return document.getElementById(id); }
+    function setStatus(text, opts={}){
+      const el = $('status'); if(!el) return;
+      el.textContent = text;
+      if (opts.fallback) el.dataset.fallback = '1';
+      else delete el.dataset.fallback;
+    }
 
     /* JSONP コールバック */
     window.onGviz = function(payload){
+      // 受信したらまずフォールバック表示は必ず解除
+      setStatus($('status')?.textContent || '', { fallback:false });
       if (typeof state.pendingHandler === 'function') state.pendingHandler(payload);
     };
 
     /* ユーティリティ */
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
     function scheduleSearch(){ clearTimeout(state.debounce); state.debounce = setTimeout(render, 160); }
-    function $(id){ return document.getElementById(id); }
     function showToast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
 
     async function copyPair(title, artist){
@@ -228,9 +229,8 @@
 
     /* 描画 */
     function render(){
-      /* 念のため：描画時に fallback ラベルが残っていたら外す */
-      const stRender = $('status');
-      if (stRender?.dataset?.fallback === '1') delete stRender.dataset.fallback;
+      // 描画開始時にフォールバック表示は念のため解除
+      setStatus($('status')?.textContent || '', { fallback:false });
 
       const tableWrap = $('table'); tableWrap.innerHTML = '';
       const listWrap  = $('mblist'); listWrap.innerHTML = '';
@@ -254,9 +254,11 @@
       }
       const rows = filtered.slice(0, limit);
 
-      $('status').textContent = q
-        ? `${rows.length}件ヒット（全${filtered.length}件／総${state.total}件）／表示上限 ${limitLabel}`
-        : `表示中 ${rows.length}件（総${state.total}件）／表示上限 ${limitLabel}`;
+      setStatus(
+        q
+          ? `${rows.length}件ヒット（全${filtered.length}件／総${state.total}件）／表示上限 ${limitLabel}`
+          : `表示中 ${rows.length}件（総${state.total}件）／表示上限 ${limitLabel}`
+      );
 
       if (rows.length === 0) {
         hint.textContent = q ? '該当なし' : '検索結果がここに表示されます。';
@@ -278,9 +280,10 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
-          /* 1行目：アーティスト／曲名（下線はCSSで消す） */
+          /* 1行目：アーティスト／曲名（上段の下線なし） */
           const trTop = document.createElement('tr'); trTop.className='item-top';
           const tdTop = document.createElement('td'); tdTop.colSpan = 3;
+          tdTop.style.borderBottom = 'none';
           const l1 = document.createElement('div'); l1.className='l1';
           const a1 = document.createElement('span'); a1.className='artist'; a1.textContent=artist||'';
           const sep = document.createElement('span'); sep.className='sep'; sep.textContent='/';
@@ -289,9 +292,10 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          /* 2行目：操作（フル幅・右寄せ） */
+          /* 2行目：操作（フル幅・右寄せ、上線なし） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
           const tdOps = document.createElement('td'); tdOps.colSpan = 3;
+          tdOps.style.borderTop = 'none';
           const ops = document.createElement('div'); ops.className='ops';
 
           const cHref = safeHttpUrl(cUrl) || safeHttpUrl(urlFromText(cText));
@@ -391,11 +395,7 @@
       const reqId = ++state.lastReqId;
       state.currentAttempt = attempt;
 
-      /* 旧フォールバック表示を必ずクリア */
-      const st0 = $('status');
-      if (st0?.dataset?.fallback) delete st0.dataset.fallback;
-
-      /* 新規取得前に古いiframe監視を確実に停止 */
+      /* 新規取得前に古いiframe監視を停止＆DOM掃除 */
       if (state.iframeTimer) {
         clearTimeout(state.iframeTimer);
         state.iframeTimer = null;
@@ -407,18 +407,16 @@
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
-      $('status').textContent = attempt===0 ? '読み込み中…' : `読み込み中…（${attempt}）`;
+      setStatus(attempt===0 ? '読み込み中…' : `再試行中…（${attempt}）`, {fallback:false});
       showSkeleton();
 
       let settled = false;
 
       state.pendingHandler = (payload)=>{
+        // 成功/受信時：まずフォールバックUIは必ず解除
+        setStatus($('status')?.textContent || '', { fallback:false });
+
         if (settled) return;
-
-        /* 後着/別経路の受信でもフォールバック表示だけは必ず解除 */
-        const stClear = $('status');
-        if (stClear?.dataset?.fallback === '1') delete stClear.dataset.fallback;
-
         if (reqId !== state.lastReqId) return; // 後着パケット防止
         settled = true;
 
@@ -427,7 +425,7 @@
 
         try{
           if (!payload || !Array.isArray(payload.rows)) {
-            $('status').textContent = 'データ取得に失敗しました（不正なレスポンス）';
+            setStatus('データ取得に失敗しました（不正なレスポンス）', {fallback:false});
             cleanupJsonpScripts(reqId);
             clearSkeleton();
             return;
@@ -446,7 +444,6 @@
           if (f) f.remove();
           state.usedIframe = false;
 
-          // このreqId由来のウォッチドッグだけ止める
           if (state.iframeReqId === reqId && state.iframeTimer) {
             clearTimeout(state.iframeTimer);
           }
@@ -456,14 +453,12 @@
           cleanupJsonpScripts(reqId);
           state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
 
-          // 念のためもう一度フォールバック解除
-          const st2 = $('status'); if (st2?.dataset?.fallback === '1') delete st2.dataset.fallback;
-          $('status').textContent = `読み込み完了：${state.rows.length}件（全${state.total}件）`;
+          setStatus(`読み込み完了：${state.rows.length}件（全${state.total}件）`, {fallback:false});
           clearSkeleton();
           render();
         }catch(e){
           console.error(e);
-          $('status').textContent = '読み込みに失敗しました';
+          setStatus('読み込みに失敗しました', {fallback:false});
           cleanupJsonpScripts(reqId);
           clearSkeleton();
         }
@@ -476,7 +471,7 @@
 
       state.globalTimer = setTimeout(()=>{
         if (settled) return;
-        cleanupJsonpScripts(reqId);
+        if (reqId !== state.lastReqId) return;        // 古い要求は無視
         tryIframeFallback(limit, reqId, 'jsonp-timeout');
       }, JSONP_TIMEOUT_MS);
 
@@ -484,10 +479,14 @@
     }
 
     function tryIframeFallback(limit, reqId, reason){
+      // 既に最新でない or 既にデータ描画済みなら走らせない
+      if (reqId !== state.lastReqId) return;
+      if ((state.rows && state.rows.length) > 0) return;
+
       if (state.usedIframe) return;
       state.usedIframe = true;
-      $('status').textContent = `別ルートで取得中…（${reason}）`;
-      const st = $('status'); if (st) st.dataset.fallback = '1';
+
+      setStatus(`別ルートで取得中…（${reason}）`, {fallback:true});
 
       const old = document.getElementById('gviz-frame');
       if (old) old.remove();
@@ -505,16 +504,12 @@
       clearTimeout(state.iframeTimer);
       state.iframeReqId = reqId;
       state.iframeTimer = setTimeout(()=>{
-        // 自分が最新の要求かつiframe待ち中のみ発火
-        if (state.lastReqId !== reqId) return;   // 古い要求
-        if (!state.usedIframe) return;           // 既にiframe経路は閉じている
-        if ((state.rows && state.rows.length) > 0) return; // 既に描画済み
+        // 最新要求か／まだフォールバック状態か／まだ描画できていないか を確認
+        if (state.lastReqId !== reqId) return;
+        if (!$('status')?.dataset?.fallback) return;
+        if ((state.rows && state.rows.length) > 0) return;
 
-        const st3 = $('status');
-        if (!st3?.dataset?.fallback) return;    // フォールバック状態でないなら触らない
-
-        delete st3.dataset.fallback;
-        st3.textContent = '取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）';
+        setStatus('取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）', {fallback:false});
         const g = document.getElementById('gviz-frame'); if (g) g.remove();
         state.usedIframe = false;
         clearSkeleton();
@@ -524,24 +519,23 @@
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
-
-      /* —— 重要：経路に関係なくフォールバック表示を即時解除し、監視を停止 —— */
-      const st = $('status');
-      if (st?.dataset?.fallback === '1') delete st.dataset.fallback;
-      // タイマーと状態を無条件に解除（reqId一致に依存しない）
-      if (state.iframeTimer) { clearTimeout(state.iframeTimer); state.iframeTimer = null; }
-      state.iframeReqId = null;
-      state.usedIframe = false;
-      const g = document.getElementById('gviz-frame'); if (g) g.remove();
-      // 一時メッセージにしておく（すぐ render が上書き）
-      st.textContent = 'データを受信しました…';
-
+      // 受信時はまずフォールバック解除（文言が残らないように）
+      setStatus($('status')?.textContent || '', { fallback:false });
       if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
 
-    // オンライン/オフライン通知（任意）
-    window.addEventListener('offline', ()=>{ $('status').textContent='オフラインです。接続を確認してください。'; });
-    window.addEventListener('online',  ()=>{ $('status').textContent='オンラインに復帰しました。再取得しています…'; fetchRows(INITIAL_FETCH); });
+    // オンライン/オフライン通知
+    window.addEventListener('offline', ()=>{ setStatus('オフラインです。接続を確認してください。', {fallback:false}); });
+    window.addEventListener('online',  ()=>{ setStatus('オンラインに復帰しました。再取得しています…', {fallback:false}); fetchRows(INITIAL_FETCH); });
+
+    // タブ復帰時の保険：フォールバック表示が残っていれば消す
+    document.addEventListener('visibilitychange', ()=>{
+      if (document.visibilityState === 'visible') {
+        if ($('status')?.dataset?.fallback && (state.rows && state.rows.length)>0) {
+          setStatus($('status').textContent, {fallback:false});
+        }
+      }
+    });
 
     // 初回
     fetchRows(INITIAL_FETCH);
@@ -551,7 +545,7 @@
     $('limit').addEventListener('change', ()=>{
       const raw = $('limit').value;
       if (raw === 'all' && (state.fetchedLimit||0) < (state.total||HARD_LIMIT)) {
-        $('status').textContent = '全件を取得しています…';
+        setStatus('全件を取得しています…', {fallback:false});
         fetchRows(HARD_LIMIT);
       } else {
         render();
