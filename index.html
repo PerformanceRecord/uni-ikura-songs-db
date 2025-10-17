@@ -36,7 +36,7 @@
     #dm-select{width:100%;padding:6px 10px;font-size:16px;line-height:1.2} /* iOSズーム回避 */
     .btn-full{width:100%}
 
-    input[type="search"],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;color:var(--text);outline:none}
+    input[type="search"],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;color:#1a1a1a;outline:none}
     input[type="search"]:focus,select:focus,.btn:focus,.btn-pill:focus{outline:3px solid var(--focus);outline-offset:2px}
 
     .muted{color:var(--muted);font-size:13px}
@@ -66,7 +66,7 @@
     }
     table.stacked .item-top .l1 .sep{opacity:.6}
     table.stacked .item-ops .ops{
-      display:flex;gap:8px;align-items:center;justify-content:flex-end;
+      display:flex;gap:8px;align-items:center;justify-content:flex-end; /* 右寄せ */
       flex-wrap:wrap;overflow:visible;min-width:0
     }
 
@@ -161,7 +161,8 @@
       lastReqId: 0, usedIframe: false,
       pendingHandler: null,
       globalTimer: null, shortTimer: null, currentAttempt: 0,
-      iframeTimer: null
+      iframeTimer: null,
+      iframeReqId: null
     };
 
     /* JSONP コールバック */
@@ -272,7 +273,7 @@
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
           /* 1行目：アーティスト／曲名 */
           const trTop = document.createElement('tr'); trTop.className='item-top';
-          const tdTop = document.createElement('td'); tdTop.colSpan = 3; // 念のため拡張性確保
+          const tdTop = document.createElement('td'); tdTop.colSpan = 3; // 拡張性確保
           const l1 = document.createElement('div'); l1.className='l1';
           const a1 = document.createElement('span'); a1.className='artist'; a1.textContent=artist||'';
           const sep = document.createElement('span'); sep.className='sep'; sep.textContent='/';
@@ -281,7 +282,7 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          /* 2行目：操作（フル幅） */
+          /* 2行目：操作（フル幅・右寄せ） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
           const tdOps = document.createElement('td'); tdOps.colSpan = 3;
           const ops = document.createElement('div'); ops.className='ops';
@@ -364,7 +365,7 @@
       }
     }
 
-    /* —— 以下、データ取得ロジックはあなたの最新版から変更なし —— */
+    /* ===== 通信処理 ===== */
 
     function jsonpOnce(url, onerror, reqId){
       const s=document.createElement('script');
@@ -383,6 +384,15 @@
       const reqId = ++state.lastReqId;
       state.currentAttempt = attempt;
 
+      /* 新規取得前に古いiframe監視を確実に停止 */
+      if (state.iframeTimer) {
+        clearTimeout(state.iframeTimer);
+        state.iframeTimer = null;
+        state.iframeReqId = null;
+      }
+      const prev = document.getElementById('gviz-frame');
+      if (prev) prev.remove();
+
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
@@ -398,7 +408,7 @@
 
         clearTimeout(state.shortTimer);
         clearTimeout(state.globalTimer);
-        clearTimeout(state.iframeTimer);
+        // ※ iframeTimer はこのリクエストのものだけ解除する（後で判定）
 
         try{
           if (!payload || !Array.isArray(payload.rows)) {
@@ -420,6 +430,14 @@
           const f = document.getElementById('gviz-frame');
           if (f) f.remove();
           state.usedIframe = false;
+
+          // このreqId由来のウォッチドッグだけ止める
+          if (state.iframeReqId === reqId && state.iframeTimer) {
+            clearTimeout(state.iframeTimer);
+          }
+          state.iframeTimer = null;
+          state.iframeReqId = null;
+
           cleanupJsonpScripts(reqId);
           state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
 
@@ -467,7 +485,13 @@
       document.body.appendChild(f);
 
       clearTimeout(state.iframeTimer);
+      state.iframeReqId = reqId;
       state.iframeTimer = setTimeout(()=>{
+        // 自分が最新の要求かつiframe待ち中のみ発火
+        if (state.lastReqId !== reqId) return;   // 古い要求
+        if (!state.usedIframe) return;           // 既にiframe経路は閉じている
+        if ((state.rows && state.rows.length) > 0) return; // 既に描画済み
+
         $('status').textContent = '取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）';
         const g = document.getElementById('gviz-frame'); if (g) g.remove();
         state.usedIframe = false;
