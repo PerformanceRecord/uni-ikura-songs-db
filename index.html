@@ -404,7 +404,7 @@
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
-      $('status').textContent = attempt===0 ? '読み込み中…' : `再試行中…（${attempt}）`;
+      $('status').textContent = attempt===0 ? '読み込み中…' : `接続中…（${attempt}）`;
       showSkeleton();
 
       let settled = false;
