@@ -28,16 +28,18 @@
     .row{display:flex;gap:8px;align-items:center}
     .row .search{flex:1 1 auto;min-width:0}
 
-    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap}
-    .limit-wrap,.type-wrap{display:flex;align-items:center;gap:6px}
-    .limit-wrap label,.type-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
-    #limit,#kind{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
+    /* 既存: ツールバーは不使用だが互換維持 */
+    .toolbar{display:none}
 
-    /* 弾幕UI */
-    .dm-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
+    .limit-wrap{display:flex;align-items:center;gap:6px}
+    .limit-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
+    #limit{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
+
+    /* 弾幕UI（横比率は 7:3） */
+    .dm-wrap{display:flex;align-items:center;gap:8px}
     .dm-select-wrap{flex:7 1 0}
     .dm-btn-wrap{flex:3 1 0;display:flex}
-    #dm-select{width:100%;padding:6px 10px;font-size:16px;line-height:1.2}
+    #dm-select{width:100%;padding:6px 10px;font-size:16px;line-height:1.2} /* iOSズーム回避 */
     .btn-full{width:100%}
 
     input[type="search"],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;color:#1a1a1a;outline:none}
@@ -62,9 +64,14 @@
     table.stacked .item-top{background:#fff;border-bottom:none}
     table.stacked .item-ops{background:#fff}
     table.stacked .item-ops td{border-top:none}
-    table.stacked .item-top .l1{font-size:16px;font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+    table.stacked .item-top .l1{
+      font-size:16px;font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start
+    }
     table.stacked .item-top .l1 .sep{opacity:.6}
-    table.stacked .item-ops .ops{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;overflow:visible;min-width:0}
+    table.stacked .item-ops .ops{
+      display:flex;gap:8px;align-items:center;justify-content:flex-end;
+      flex-wrap:wrap;overflow:visible;min-width:0
+    }
 
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
@@ -93,17 +100,40 @@
       .dm-select-wrap{flex:7 1 0}
       .dm-btn-wrap{flex:3 1 0}
     }
+
+    /* === 再配置用 === */
+    .ui .row{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .ui .row:first-child{margin-top:0}
+
+    /* 1列目：件数 / 対象 を横並び */
+    .ui .row1 .limit-wrap,
+    .ui .row1 .type-wrap{flex:1 1 0}
+    .type-wrap{display:flex;align-items:center;gap:6px}
+    #kind{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
+
+    /* 2列目：検索フォームはフル幅 */
+    .ui .row2 .search{flex:1 1 0;min-width:0}
+
+    /* 3列目：弾幕選択/コピー（既存クラス流用） */
+    .ui .row3 .dm-select-wrap{flex:7 1 0}
+    .ui .row3 .dm-btn-wrap{flex:3 1 0}
+
+    /* 4列目：ステータスはフル幅 */
+    .ui .row4 #status{flex:1 1 0}
+
+    /* 縦積みにしたい場合のオプション
+    @media (max-width:768px){
+      .ui .row1{flex-direction:column;align-items:stretch}
+    }
+    */
   </style>
 </head>
 <body>
 
-  <!-- 検索UI -->
-  <div class="card">
-    <div class="row">
-      <input class="search" id="q" type="search" placeholder="曲名／アーティスト名で検索" autocomplete="off">
-    </div>
-
-    <div class="toolbar">
+  <!-- 検索UI（再配置版） -->
+  <div class="card ui">
+    <!-- 1列目：件数 / 対象 -->
+    <div class="row row1">
       <div class="limit-wrap">
         <label for="limit">件数</label>
         <select id="limit" aria-label="表示件数">
@@ -114,7 +144,6 @@
         </select>
       </div>
 
-      <!-- 追加: 対象フィルタ -->
       <div class="type-wrap">
         <label for="kind">対象</label>
         <select id="kind" aria-label="対象フィルタ">
@@ -125,8 +154,13 @@
       </div>
     </div>
 
-    <!-- 弾幕UI -->
-    <div class="dm-wrap" aria-label="弾幕コピー">
+    <!-- 2列目：楽曲検索 -->
+    <div class="row row2">
+      <input class="search" id="q" type="search" placeholder="曲名／アーティスト名で検索" autocomplete="off">
+    </div>
+
+    <!-- 3列目：弾幕選択 / コピー -->
+    <div class="row row3 dm-wrap" aria-label="弾幕コピー">
       <div class="dm-select-wrap">
         <select id="dm-select" title="弾幕を選択">
           <option value="🍣🧡🍣🧡🍣🧡">🍣🧡🍣</option>
@@ -138,7 +172,10 @@
       </div>
     </div>
 
-    <div class="muted" id="status" role="status" aria-live="polite">読み込み中…</div>
+    <!-- 4列目：ステータス -->
+    <div class="row row4">
+      <div class="muted" id="status" role="status" aria-live="polite">読み込み中…</div>
+    </div>
   </div>
 
   <!-- 結果表示 -->
@@ -209,6 +246,12 @@
     function showSkeleton(){ const wrap=$('table'); wrap.innerHTML=''; for(let i=0;i<6;i++){ const sk=document.createElement('div'); sk.className='skeleton'; wrap.appendChild(sk); } }
     function clearSkeleton(){ $('table').innerHTML=''; }
 
+    /* kind の安全取得 */
+    function getKindValue(){
+      const el = document.getElementById('kind');
+      return el ? el.value : 'all';
+    }
+
     /* 描画 */
     function render(){
       clearFallbackFlag();
@@ -224,7 +267,7 @@
 
       const q = normalize($('q').value || '');
       const rawLimit = $('limit').value;
-      const kind = $('kind').value || 'all'; // 追加: 対象フィルタ
+      const kind = getKindValue();
 
       const limit = rawLimit === 'all'
         ? Math.min(HARD_LIMIT, state.total || state.rows.length)
@@ -233,7 +276,7 @@
 
       let filtered = state.rows;
 
-      // 文字検索
+      // 文字検索（アーティスト名・曲名）
       if (q) {
         filtered = filtered.filter(([artist, title]) => {
           const a = normalize(artist), t = normalize(title);
@@ -241,7 +284,7 @@
         });
       }
 
-      // 追加: 種別フィルタ（C列 = cText 完全一致）
+      // 対象フィルタ（C列 cText 完全一致）
       if (kind !== 'all') {
         filtered = filtered.filter(([, , cText]) => String(cText || '').trim() === kind);
       }
@@ -250,7 +293,7 @@
 
       setStatus(
         (q || kind !== 'all')
-          ? `${rows.length}件ヒット（全${filtered.length}件／総${state.total}件）／表示上限 ${limitLabel}`
+          ? `${rows.length}件ヒット（${kind === 'all' ? 'すべて' : kind}／全${filtered.length}件／総${state.total}件）／表示上限 ${limitLabel}`
           : `表示中 ${rows.length}件（総${state.total}件）／表示上限 ${limitLabel}`
       );
 
@@ -273,8 +316,9 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
+          /* 1行目：楽曲情報（下線なし） */
           const trTop = document.createElement('tr'); trTop.className='item-top';
-          const tdTop = document.createElement('td'); tdTop.style.borderBottom='none';
+          const tdTop = document.createElement('td'); tdTop.style.borderBottom = 'none';
           const l1 = document.createElement('div'); l1.className='l1';
           const a1 = document.createElement('span'); a1.className='artist'; a1.textContent=artist||'';
           const sep = document.createElement('span'); sep.className='sep'; sep.textContent='/';
@@ -283,8 +327,9 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
+          /* 2行目：操作（上線なし・右寄せ） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
-          const tdOps = document.createElement('td'); tdOps.style.borderTop='none';
+          const tdOps = document.createElement('td'); tdOps.style.borderTop = 'none';
           const ops = document.createElement('div'); ops.className='ops';
 
           const cHref = safeHttpUrl(cUrl) || safeHttpUrl(urlFromText(cText));
@@ -366,10 +411,13 @@
       }
     }
 
-    /* ===== 通信処理（既存） ===== */
+    /* ===== 通信処理 ===== */
+
     function jsonpOnce(url, onerror, reqId){
       const s=document.createElement('script');
-      s.src=url; s.async=true; s.dataset.jsonp=String(reqId||'');
+      s.src=url;
+      s.async=true;
+      s.dataset.jsonp = String(reqId||'');
       s.onerror=()=>{ try{ s.remove(); }catch{}; onerror && onerror(); };
       document.head.appendChild(s);
     }
@@ -381,8 +429,14 @@
     function fetchRows(limit, attempt=0){
       const reqId = ++state.lastReqId;
 
-      if (state.iframeTimer) { clearTimeout(state.iframeTimer); state.iframeTimer=null; state.iframeReqId=null; }
-      const prev = document.getElementById('gviz-frame'); if (prev) prev.remove();
+      /* 旧iframe監視を停止＆DOM掃除 */
+      if (state.iframeTimer) {
+        clearTimeout(state.iframeTimer);
+        state.iframeTimer = null;
+        state.iframeReqId = null;
+      }
+      const prev = document.getElementById('gviz-frame');
+      if (prev) prev.remove();
 
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
@@ -413,13 +467,20 @@
             .filter(([a,b]) => ((a||'')+(b||'')).trim() !== '');
 
           state.rows = rows;
-          state.total = Number((payload.total ?? null) != null ? payload.total : (payload.matched ?? rows.length));
+          state.total = Number(
+            (payload.total ?? null) != null ? payload.total :
+            (payload.matched ?? rows.length)
+          );
 
-          const f = document.getElementById('gviz-frame'); if (f) f.remove();
+          const f = document.getElementById('gviz-frame');
+          if (f) f.remove();
           state.usedIframe = false;
 
-          if (state.iframeReqId === reqId && state.iframeTimer) { clearTimeout(state.iframeTimer); }
-          state.iframeTimer = null; state.iframeReqId = null;
+          if (state.iframeReqId === reqId && state.iframeTimer) {
+            clearTimeout(state.iframeTimer);
+          }
+          state.iframeTimer = null;
+          state.iframeReqId = null;
 
           cleanupJsonpScripts(reqId);
           state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
@@ -436,7 +497,11 @@
       };
 
       state.shortTimer = setTimeout(()=>{ if (!settled && attempt < MAX_RETRY) fetchRows(limit, attempt+1); }, SHORT_TRY_MS);
-      state.globalTimer = setTimeout(()=>{ if (!settled && reqId === state.lastReqId) tryIframeFallback(limit, reqId, 'jsonp-timeout'); }, JSONP_TIMEOUT_MS);
+
+      state.globalTimer = setTimeout(()=>{
+        if (!settled && reqId === state.lastReqId) tryIframeFallback(limit, reqId, 'jsonp-timeout');
+      }, JSONP_TIMEOUT_MS);
+
       jsonpOnce(url, ()=>{}, reqId);
     }
 
@@ -448,7 +513,8 @@
 
       setStatus(`別ルートで取得中…（${reason}）`, {fallback:true});
 
-      const old = document.getElementById('gviz-frame'); if (old) old.remove();
+      const old = document.getElementById('gviz-frame');
+      if (old) old.remove();
 
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const urlFrame = `${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
@@ -494,7 +560,7 @@
       }
     });
 
-    // 初回取得
+    // 初回
     fetchRows(INITIAL_FETCH);
 
     /* イベント */
@@ -509,12 +575,17 @@
       }
     });
 
-    // 追加: 対象フィルタ変更で描画
-    $('kind').addEventListener('change', render);
+    // kind の変更で再描画（存在チェック込み）
+    (function(){
+      const el = document.getElementById('kind');
+      if (el) el.addEventListener('change', render);
+    })();
 
     const mq = window.matchMedia('(max-width: 768px)');
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
+
+    console.log('UI layout v20251023');
   </script>
 </body>
 </html>
