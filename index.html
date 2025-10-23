@@ -319,7 +319,7 @@
 
       setStatus(
         (q || kind !== 'all')
-          ? `${rows.length}件ヒット（${kind === 'all' ? 'すべて' : kind}／全${filtered.length}件／総${state.total}件）／表示上限 ${limitLabel}`
+          ? `${rows.length}件ヒット（${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`
           : `表示中 ${rows.length}件（総${state.total}件）／表示上限 ${limitLabel}`
       );
 
