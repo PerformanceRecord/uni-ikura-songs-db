@@ -11,13 +11,11 @@
   <link rel="dns-prefetch" href="https://script.googleusercontent.com">
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 
-<link rel="icon" href="/uni-ikura-songs-db/favicon.ico" sizes="any">
-<link rel="icon" href="/uni-ikura-songs-db/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="icon" href="/uni-ikura-songs-db/favicon-16.png" sizes="16x16" type="image/png">
-<link rel="apple-touch-icon" href="/uni-ikura-songs-db/apple-touch-icon.png" sizes="180x180">
+  <link rel="icon" href="/uni-ikura-songs-db/favicon.ico" sizes="any">
+  <link rel="icon" href="/uni-ikura-songs-db/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/uni-ikura-songs-db/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="/uni-ikura-songs-db/apple-touch-icon.png" sizes="180x180">
 
-
-  
   <style>
     :root{
       --bg:#ffb744; --card:#ffffff; --text:#1a1a1a; --muted:#6b7280; --line:#e5e7eb;
@@ -31,15 +29,15 @@
     .row .search{flex:1 1 auto;min-width:0}
 
     .toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap}
-    .limit-wrap{display:flex;align-items:center;gap:6px}
-    .limit-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
-    #limit{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
+    .limit-wrap,.type-wrap{display:flex;align-items:center;gap:6px}
+    .limit-wrap label,.type-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
+    #limit,#kind{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
 
     /* 弾幕UI */
     .dm-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
     .dm-select-wrap{flex:7 1 0}
     .dm-btn-wrap{flex:3 1 0;display:flex}
-    #dm-select{width:100%;padding:6px 10px;font-size:16px;line-height:1.2} /* iOSズーム回避 */
+    #dm-select{width:100%;padding:6px 10px;font-size:16px;line-height:1.2}
     .btn-full{width:100%}
 
     input[type="search"],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;color:#1a1a1a;outline:none}
@@ -60,18 +58,13 @@
     /* デスクトップ：行分割（上段=情報 下段=操作） */
     table.stacked{table-layout:auto}
     table.stacked th, table.stacked td{width:auto !important}
-    table.stacked thead th{width:100% !important; white-space:nowrap} /* display の指定は既定なので不要 */
+    table.stacked thead th{width:100% !important; white-space:nowrap}
     table.stacked .item-top{background:#fff;border-bottom:none}
     table.stacked .item-ops{background:#fff}
     table.stacked .item-ops td{border-top:none}
-    table.stacked .item-top .l1{
-      font-size:16px;font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start
-    }
+    table.stacked .item-top .l1{font-size:16px;font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
     table.stacked .item-top .l1 .sep{opacity:.6}
-    table.stacked .item-ops .ops{
-      display:flex;gap:8px;align-items:center;justify-content:flex-end; /* 右寄せ */
-      flex-wrap:wrap;overflow:visible;min-width:0
-    }
+    table.stacked .item-ops .ops{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;overflow:visible;min-width:0}
 
     .btn-pill{
       display:inline-block;border:1px solid var(--line);background:var(--pill-bg);color:var(--link);
@@ -118,6 +111,16 @@
           <option value="50">50件</option>
           <option value="200">200件</option>
           <option value="all">全件</option>
+        </select>
+      </div>
+
+      <!-- 追加: 対象フィルタ -->
+      <div class="type-wrap">
+        <label for="kind">対象</label>
+        <select id="kind" aria-label="対象フィルタ">
+          <option value="all" selected>すべて</option>
+          <option value="歌ってみた">歌ってみた</option>
+          <option value="ショート">ショート</option>
         </select>
       </div>
     </div>
@@ -169,22 +172,11 @@
 
     /* ========= 共通: ステータス更新 ========= */
     function $(id){ return document.getElementById(id); }
-    function setStatus(text, opts={}){
-      const el = $('status'); if(!el) return;
-      el.textContent = text;
-      if (opts.fallback) el.dataset.fallback = '1';
-      else delete el.dataset.fallback;
-    }
-    function clearFallbackFlag(){
-      const el = $('status'); if(el) delete el.dataset.fallback;
-    }
+    function setStatus(text, opts={}){ const el=$('status'); if(!el) return; el.textContent=text; if (opts.fallback) el.dataset.fallback='1'; else delete el.dataset.fallback; }
+    function clearFallbackFlag(){ const el=$('status'); if(el) delete el.dataset.fallback; }
 
     /* JSONP コールバック */
-    window.onGviz = function(payload){
-      // 受信したらフォールバック表示は必ず解除
-      clearFallbackFlag();
-      if (typeof state.pendingHandler === 'function') state.pendingHandler(payload);
-    };
+    window.onGviz = function(payload){ clearFallbackFlag(); if (typeof state.pendingHandler === 'function') state.pendingHandler(payload); };
 
     /* ユーティリティ */
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
@@ -209,74 +201,61 @@
       }catch{ showToast('弾幕のコピーに失敗しました'); }
     });
 
-    function urlFromText(s){
-      if(!s) return '';
-      const m = String(s).match(/https?:\/\/\S+/);
-      return m ? m[0].replace(/[)\]\s]+$/, '') : '';
-    }
-    function formatYmdLabel(s){
-      const m = /^(\d{4})(\d{2})(\d{2})/.exec(String(s||''));
-      return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
-    }
-    function safeHttpUrl(u){
-      if(!u) return '';
-      try{
-        const url = new URL(String(u));
-        return (url.protocol==='http:'||url.protocol==='https:') ? url.href : '';
-      }catch{ return ''; }
-    }
+    function urlFromText(s){ if(!s) return ''; const m=String(s).match(/https?:\/\/\S+/); return m? m[0].replace(/[)\]\s]+$/, '') : ''; }
+    function formatYmdLabel(s){ const m=/^(\d{4})(\d{2})(\d{2})/.exec(String(s||'')); return m? `${m[1]}/${m[2]}/${m[3]}` : null; }
+    function safeHttpUrl(u){ if(!u) return ''; try{ const url=new URL(String(u)); return (url.protocol==='http:'||url.protocol==='https:') ? url.href : ''; }catch{ return ''; } }
 
     /* スケルトン */
-    function showSkeleton(){
-      const wrap = $('table');
-      wrap.innerHTML = '';
-      for(let i=0;i<6;i++){
-        const sk = document.createElement('div');
-        sk.className = 'skeleton';
-        wrap.appendChild(sk);
-      }
-    }
-    function clearSkeleton(){ $('table').innerHTML = ''; }
+    function showSkeleton(){ const wrap=$('table'); wrap.innerHTML=''; for(let i=0;i<6;i++){ const sk=document.createElement('div'); sk.className='skeleton'; wrap.appendChild(sk); } }
+    function clearSkeleton(){ $('table').innerHTML=''; }
 
     /* 描画 */
     function render(){
-      // 描画開始時にフォールバック表示は念のため解除
       clearFallbackFlag();
 
       const tableWrap = $('table'); tableWrap.innerHTML = '';
       const listWrap  = $('mblist'); listWrap.innerHTML = '';
       const hint = $('hint');
 
-      // いったん両方非表示（FOUC防止）
       tableWrap.style.display = 'none';
       listWrap.style.display  = 'none';
 
       const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
       const q = normalize($('q').value || '');
-      const raw = $('limit').value;
-      const limit = raw === 'all'
+      const rawLimit = $('limit').value;
+      const kind = $('kind').value || 'all'; // 追加: 対象フィルタ
+
+      const limit = rawLimit === 'all'
         ? Math.min(HARD_LIMIT, state.total || state.rows.length)
-        : Math.min(parseInt(raw,10)||20, HARD_LIMIT);
-      const limitLabel = raw === 'all' ? '全件' : `${limit}件`;
+        : Math.min(parseInt(rawLimit,10)||20, HARD_LIMIT);
+      const limitLabel = rawLimit === 'all' ? '全件' : `${limit}件`;
 
       let filtered = state.rows;
+
+      // 文字検索
       if (q) {
         filtered = filtered.filter(([artist, title]) => {
           const a = normalize(artist), t = normalize(title);
           return a.includes(q) || t.includes(q);
         });
       }
+
+      // 追加: 種別フィルタ（C列 = cText 完全一致）
+      if (kind !== 'all') {
+        filtered = filtered.filter(([, , cText]) => String(cText || '').trim() === kind);
+      }
+
       const rows = filtered.slice(0, limit);
 
       setStatus(
-        q
+        (q || kind !== 'all')
           ? `${rows.length}件ヒット（全${filtered.length}件／総${state.total}件）／表示上限 ${limitLabel}`
           : `表示中 ${rows.length}件（総${state.total}件）／表示上限 ${limitLabel}`
       );
 
       if (rows.length === 0) {
-        hint.textContent = q ? '該当なし' : '検索結果がここに表示されます。';
+        hint.textContent = (q || kind !== 'all') ? '該当なし' : '検索結果がここに表示されます。';
         return;
       }
       hint.textContent = '';
@@ -294,10 +273,8 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
-          /* 1行目：楽曲情報（下線なし） */
           const trTop = document.createElement('tr'); trTop.className='item-top';
-          const tdTop = document.createElement('td');
-          tdTop.style.borderBottom = 'none';
+          const tdTop = document.createElement('td'); tdTop.style.borderBottom='none';
           const l1 = document.createElement('div'); l1.className='l1';
           const a1 = document.createElement('span'); a1.className='artist'; a1.textContent=artist||'';
           const sep = document.createElement('span'); sep.className='sep'; sep.textContent='/';
@@ -306,10 +283,8 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          /* 2行目：操作（上線なし・右寄せ） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
-          const tdOps = document.createElement('td');
-          tdOps.style.borderTop = 'none';
+          const tdOps = document.createElement('td'); tdOps.style.borderTop='none';
           const ops = document.createElement('div'); ops.className='ops';
 
           const cHref = safeHttpUrl(cUrl) || safeHttpUrl(urlFromText(cText));
@@ -391,13 +366,10 @@
       }
     }
 
-    /* ===== 通信処理 ===== */
-
+    /* ===== 通信処理（既存） ===== */
     function jsonpOnce(url, onerror, reqId){
       const s=document.createElement('script');
-      s.src=url;
-      s.async=true;
-      s.dataset.jsonp = String(reqId||'');
+      s.src=url; s.async=true; s.dataset.jsonp=String(reqId||'');
       s.onerror=()=>{ try{ s.remove(); }catch{}; onerror && onerror(); };
       document.head.appendChild(s);
     }
@@ -409,14 +381,8 @@
     function fetchRows(limit, attempt=0){
       const reqId = ++state.lastReqId;
 
-      /* 新規取得前に古いiframe監視を停止＆DOM掃除 */
-      if (state.iframeTimer) {
-        clearTimeout(state.iframeTimer);
-        state.iframeTimer = null;
-        state.iframeReqId = null;
-      }
-      const prev = document.getElementById('gviz-frame');
-      if (prev) prev.remove();
+      if (state.iframeTimer) { clearTimeout(state.iframeTimer); state.iframeTimer=null; state.iframeReqId=null; }
+      const prev = document.getElementById('gviz-frame'); if (prev) prev.remove();
 
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
@@ -427,11 +393,9 @@
       let settled = false;
 
       state.pendingHandler = (payload)=>{
-        // 成功/受信時：フォールバックUIを解除
         clearFallbackFlag();
-
         if (settled) return;
-        if (reqId !== state.lastReqId) return; // 後着パケット防止
+        if (reqId !== state.lastReqId) return;
         settled = true;
 
         clearTimeout(state.shortTimer);
@@ -449,20 +413,13 @@
             .filter(([a,b]) => ((a||'')+(b||'')).trim() !== '');
 
           state.rows = rows;
-          state.total = Number(
-            (payload.total ?? null) != null ? payload.total :
-            (payload.matched ?? rows.length)
-          );
+          state.total = Number((payload.total ?? null) != null ? payload.total : (payload.matched ?? rows.length));
 
-          const f = document.getElementById('gviz-frame');
-          if (f) f.remove();
+          const f = document.getElementById('gviz-frame'); if (f) f.remove();
           state.usedIframe = false;
 
-          if (state.iframeReqId === reqId && state.iframeTimer) {
-            clearTimeout(state.iframeTimer);
-          }
-          state.iframeTimer = null;
-          state.iframeReqId = null;
+          if (state.iframeReqId === reqId && state.iframeTimer) { clearTimeout(state.iframeTimer); }
+          state.iframeTimer = null; state.iframeReqId = null;
 
           cleanupJsonpScripts(reqId);
           state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
@@ -478,32 +435,20 @@
         }
       };
 
-      state.shortTimer = setTimeout(()=>{
-        if (settled) return;
-        if (attempt < MAX_RETRY) fetchRows(limit, attempt+1);
-      }, SHORT_TRY_MS);
-
-      state.globalTimer = setTimeout(()=>{
-        if (settled) return;
-        if (reqId !== state.lastReqId) return;        // 古い要求は無視
-        tryIframeFallback(limit, reqId, 'jsonp-timeout');
-      }, JSONP_TIMEOUT_MS);
-
+      state.shortTimer = setTimeout(()=>{ if (!settled && attempt < MAX_RETRY) fetchRows(limit, attempt+1); }, SHORT_TRY_MS);
+      state.globalTimer = setTimeout(()=>{ if (!settled && reqId === state.lastReqId) tryIframeFallback(limit, reqId, 'jsonp-timeout'); }, JSONP_TIMEOUT_MS);
       jsonpOnce(url, ()=>{}, reqId);
     }
 
     function tryIframeFallback(limit, reqId, reason){
-      // 既に最新でない or 既にデータ描画済みなら走らせない
       if (reqId !== state.lastReqId) return;
       if ((state.rows && state.rows.length) > 0) return;
-
       if (state.usedIframe) return;
       state.usedIframe = true;
 
       setStatus(`別ルートで取得中…（${reason}）`, {fallback:true});
 
-      const old = document.getElementById('gviz-frame');
-      if (old) old.remove();
+      const old = document.getElementById('gviz-frame'); if (old) old.remove();
 
       const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
       const urlFrame = `${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
@@ -518,7 +463,6 @@
       clearTimeout(state.iframeTimer);
       state.iframeReqId = reqId;
       state.iframeTimer = setTimeout(()=>{
-        // 最新要求か／まだフォールバック状態か／まだ描画できていないか を確認
         if (state.lastReqId !== reqId) return;
         if (!$('status')?.dataset?.fallback) return;
         if ((state.rows && state.rows.length) > 0) return;
@@ -533,7 +477,6 @@
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
-      // 受信時はまずフォールバック解除（文言が残らないように）
       clearFallbackFlag();
       if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
@@ -542,7 +485,7 @@
     window.addEventListener('offline', ()=>{ setStatus('オフラインです。接続を確認してください。', {fallback:false}); });
     window.addEventListener('online',  ()=>{ setStatus('オンラインに復帰しました。再取得しています…', {fallback:false}); fetchRows(INITIAL_FETCH); });
 
-    // タブ復帰時の保険：フォールバック表示が残っていれば消す
+    // タブ復帰時の保険
     document.addEventListener('visibilitychange', ()=>{
       if (document.visibilityState === 'visible') {
         if ($('status')?.dataset?.fallback && (state.rows && state.rows.length)>0) {
@@ -551,13 +494,13 @@
       }
     });
 
-    // 初回
+    // 初回取得
     fetchRows(INITIAL_FETCH);
 
     /* イベント */
-    document.getElementById('q').addEventListener('input', scheduleSearch);
-    document.getElementById('limit').addEventListener('change', ()=>{
-      const raw = document.getElementById('limit').value;
+    $('q').addEventListener('input', scheduleSearch);
+    $('limit').addEventListener('change', ()=>{
+      const raw = $('limit').value;
       if (raw === 'all' && (state.fetchedLimit||0) < (state.total||HARD_LIMIT)) {
         setStatus('全件を取得しています…', {fallback:false});
         fetchRows(HARD_LIMIT);
@@ -565,6 +508,9 @@
         render();
       }
     });
+
+    // 追加: 対象フィルタ変更で描画
+    $('kind').addEventListener('change', render);
 
     const mq = window.matchMedia('(max-width: 768px)');
     mq.addEventListener?.('change', render);
