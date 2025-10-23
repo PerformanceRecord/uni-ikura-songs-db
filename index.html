@@ -101,31 +101,57 @@
       .dm-btn-wrap{flex:3 1 0}
     }
 
-    /* === 再配置用 === */
+    /* === 再配置用（基本） === */
     .ui .row{display:flex;gap:8px;align-items:center;margin-top:8px}
     .ui .row:first-child{margin-top:0}
+    .ui .row2 .search{flex:1 1 0;min-width:0}
+    .ui .row3 .dm-select-wrap{flex:7 1 0}
+    .ui .row3 .dm-btn-wrap{flex:3 1 0}
+    .ui .row4 #status{flex:1 1 0}
 
-    /* 1列目：件数 / 対象 を横並び */
+    /* === 1列目（件数 / 対象）初期設定（あとで上書きします） === */
     .ui .row1 .limit-wrap,
     .ui .row1 .type-wrap{flex:1 1 0}
     .type-wrap{display:flex;align-items:center;gap:6px}
     #kind{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
 
-    /* 2列目：検索フォームはフル幅 */
-    .ui .row2 .search{flex:1 1 0;min-width:0}
+    /* === ▼▼ ここから上書き：ご要望反映（必ずこの位置以降に置く） ▼▼ === */
 
-    /* 3列目：弾幕選択/コピー（既存クラス流用） */
-    .ui .row3 .dm-select-wrap{flex:7 1 0}
-    .ui .row3 .dm-btn-wrap{flex:3 1 0}
-
-    /* 4列目：ステータスはフル幅 */
-    .ui .row4 #status{flex:1 1 0}
-
-    /* 縦積みにしたい場合のオプション
-    @media (max-width:768px){
-      .ui .row1{flex-direction:column;align-items:stretch}
+    /* 1列目（件数 / 対象）を必ず横並びにする（折り返さない） */
+    .ui .row1{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap: nowrap;            /* 折り返し禁止 */
     }
-    */
+
+    /* 1列目の各カラムは“必要分だけの幅”で横並び（伸ばさない） */
+    .ui .row1 .limit-wrap,
+    .ui .row1 .type-wrap{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      flex:0 0 auto;               /* ← 先の flex:1 を上書き */
+    }
+
+    /* ラベルのサイズ/色を揃える（件数・対象 共通） */
+    .limit-wrap label,
+    .type-wrap label{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    /* 1列目のセレクト幅は自動（グローバルの width:100% を打ち消す） */
+    .ui .row1 select{
+      width:auto !important;       /* 強制上書き */
+      min-width:68px;
+      padding:6px 8px;
+      font-size:13px;
+      line-height:1.2;
+    }
+
+    /* === ▲▲ 上書きここまで ▲▲ === */
   </style>
 </head>
 <body>
@@ -585,7 +611,7 @@
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
 
-    console.log('UI layout v20251023');
+    console.log('UI layout v20251023-2');
   </script>
 </body>
 </html>
