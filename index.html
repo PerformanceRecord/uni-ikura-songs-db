@@ -319,8 +319,8 @@
 
       setStatus(
         (q || kind !== 'all')
-          ? `表示中 ${rows.length}件ヒット（${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`
-          : `表示中 ${rows.length}件ヒット（${state.total}件）／表示上限 ${limitLabel}`
+          ? `表示中 ${rows.length}件ヒット（対象${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`
+          : `表示中 ${rows.length}件ヒット（全${state.total}件）／表示上限 ${limitLabel}`
       );
 
       if (rows.length === 0) {
