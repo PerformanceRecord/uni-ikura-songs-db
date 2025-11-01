@@ -28,22 +28,26 @@
     .row{display:flex;gap:8px;align-items:center}
     .row .search{flex:1 1 auto;min-width:0}
 
-    /* 既存: ツールバーは不使用だが互換維持 */
     .toolbar{display:none}
 
     .limit-wrap{display:flex;align-items:center;gap:6px}
     .limit-wrap label{font-size:12px;color:var(--muted);white-space:nowrap}
     #limit{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
 
-    /* 弾幕UI（横比率は 7:3） */
     .dm-wrap{display:flex;align-items:center;gap:8px}
     .dm-select-wrap{flex:7 1 0}
     .dm-btn-wrap{flex:3 1 0;display:flex}
-    #dm-select{width:100%;padding:6px 10px;font-size:16px;line-height:1.2} /* iOSズーム回避 */
+    #dm-select{width:100%;padding:6px 10px;font-size:16px;line-height:1.2}
     .btn-full{width:100%}
 
     input[type="search"],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;color:#1a1a1a;outline:none}
-    input[type="search"]:focus,select:focus,.btn:focus,.btn-pill:focus{outline:3px solid var(--focus);outline-offset:2px}
+    input[type="search"]:focus,
+    select:focus,
+    .btn:focus,
+    .btn-pill:focus{
+      outline:3px solid var(--focus);
+      outline-offset:2px;
+    }
 
     .muted{color:var(--muted);font-size:13px}
     .btn{appearance:none;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;white-space:nowrap}
@@ -52,12 +56,10 @@
     .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(17,24,39,.92);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s ease}
     .toast.show{opacity:1}
 
-    /* テーブル（共通） */
     table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:fixed}
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;font-size:15px;vertical-align:top}
     th{position:sticky;top:0;background:var(--thead);z-index:1;font-weight:700}
 
-    /* デスクトップ：行分割（上段=情報 下段=操作） */
     table.stacked{table-layout:auto}
     table.stacked th, table.stacked td{width:auto !important}
     table.stacked thead th{width:100% !important; white-space:nowrap}
@@ -81,12 +83,10 @@
     .btn-pill:hover{background:#eef2f7;text-decoration:none}
     .btn-pill:active{transform:translateY(1px)}
 
-    /* スケルトン */
     .skeleton{height:16px;background:#f1f5f9;border-radius:6px;margin:8px 0;animation:pulse 1.2s ease-in-out infinite}
     @keyframes pulse{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
     @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} .toast{transition:none} }
 
-    /* モバイル */
     .mobile-list{display:none}
     @media (max-width:768px){
       table{display:none}
@@ -101,7 +101,6 @@
       .dm-btn-wrap{flex:3 1 0}
     }
 
-    /* === 再配置用（基本） === */
     .ui .row{display:flex;gap:8px;align-items:center;margin-top:8px}
     .ui .row:first-child{margin-top:0}
     .ui .row2 .search{flex:1 1 0;min-width:0}
@@ -109,56 +108,89 @@
     .ui .row3 .dm-btn-wrap{flex:3 1 0}
     .ui .row4 #status{flex:1 1 0}
 
-    /* === 1列目（件数 / 対象）初期設定（あとで上書きします） === */
     .ui .row1 .limit-wrap,
     .ui .row1 .type-wrap{flex:1 1 0}
     .type-wrap{display:flex;align-items:center;gap:6px}
     #kind{width:auto;min-width:68px;padding:6px 8px;font-size:13px;line-height:1.2}
 
-    /* === ▼▼ ここから上書き：ご要望反映（必ずこの位置以降に置く） ▼▼ === */
-
-    /* 1列目（件数 / 対象）を必ず横並びにする（折り返さない） */
+    /* ▼ ここから上書き（要望対応） ▼ */
     .ui .row1{
       display:flex;
       gap:8px;
       align-items:center;
-      flex-wrap: nowrap;            /* 折り返し禁止 */
+      flex-wrap:nowrap;
     }
-
-    /* 1列目の各カラムは“必要分だけの幅”で横並び（伸ばさない） */
     .ui .row1 .limit-wrap,
     .ui .row1 .type-wrap{
       display:flex;
       align-items:center;
       gap:6px;
-      flex:0 0 auto;               /* ← 先の flex:1 を上書き */
+      flex:0 0 auto;
     }
-
-    /* ラベルのサイズ/色を揃える（件数・対象 共通） */
     .limit-wrap label,
     .type-wrap label{
       font-size:12px;
       color:var(--muted);
       white-space:nowrap;
     }
-
-    /* 1列目のセレクト幅は自動（グローバルの width:100% を打ち消す） */
     .ui .row1 select{
-      width:auto !important;       /* 強制上書き */
+      width:auto !important;
       min-width:68px;
       padding:6px 8px;
       font-size:13px;
       line-height:1.2;
     }
-
-    /* === ▲▲ 上書きここまで ▲▲ === */
+    /* 並べ替え段（初期は非表示） */
+    .ui .row1b{
+      display:none;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .ui .row1b.is-open{
+      display:flex;
+    }
+    .sort-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      padding:6px 10px;
+      font-size:13px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .sort-btn.is-active{
+      border-color:var(--focus);
+      background:rgba(56,151,201,.08);
+      color:#0f172a;
+      font-weight:600;
+    }
+    .show-sort-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:8px;
+      padding:6px 10px;
+      font-size:13px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    /* ← ここで弾幕カラムとフォーカス仕様を統一 */
+    .sort-btn:focus,
+    .show-sort-btn:focus{
+      outline:3px solid var(--focus);
+      outline-offset:2px;
+    }
+    .sort-btn.is-active:focus{
+      outline:3px solid var(--focus);
+      outline-offset:2px;
+    }
+    /* ▲ ここまで上書き ▲ */
   </style>
 </head>
 <body>
 
-  <!-- 検索UI（再配置版） -->
   <div class="card ui">
-    <!-- 1列目：件数 / 対象 -->
+    <!-- 1列目：件数 / 対象 / 表示ボタン -->
     <div class="row row1">
       <div class="limit-wrap">
         <label for="limit">件数</label>
@@ -178,6 +210,16 @@
           <option value="ショート">ショート</option>
         </select>
       </div>
+
+      <!-- 新規：並べ替え表示切替 -->
+      <button id="show-sort" class="show-sort-btn" type="button">表示</button>
+    </div>
+
+    <!-- ★新規 1.5列目：並べ替えボタン群（初期非表示） -->
+    <div class="row row1b" id="sort-panel" aria-label="並べ替え">
+      <button type="button" class="sort-btn" data-sort="artist" id="sort-artist">歌手名順↑</button>
+      <button type="button" class="sort-btn" data-sort="title" id="sort-title">楽曲順↑</button>
+      <button type="button" class="sort-btn" data-sort="date" id="sort-date">投稿日順↑</button>
     </div>
 
     <!-- 2列目：楽曲検索 -->
@@ -230,18 +272,21 @@
       lastReqId: 0, usedIframe: false,
       pendingHandler: null,
       globalTimer: null, shortTimer: null,
-      iframeTimer: null, iframeReqId: null
+      iframeTimer: null, iframeReqId: null,
+      /* 並べ替え状態 */
+      sort: {
+        key: 'artist',  // artist | title | date
+        dir: 1,         // 1 = ASC, -1 = DESC
+        panel: false    // 並べ替え段の表示/非表示
+      }
     };
 
-    /* ========= 共通: ステータス更新 ========= */
     function $(id){ return document.getElementById(id); }
     function setStatus(text, opts={}){ const el=$('status'); if(!el) return; el.textContent=text; if (opts.fallback) el.dataset.fallback='1'; else delete el.dataset.fallback; }
     function clearFallbackFlag(){ const el=$('status'); if(el) delete el.dataset.fallback; }
 
-    /* JSONP コールバック */
     window.onGviz = function(payload){ clearFallbackFlag(); if (typeof state.pendingHandler === 'function') state.pendingHandler(payload); };
 
-    /* ユーティリティ */
     function normalize(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,' ').trim(); }
     function scheduleSearch(){ clearTimeout(state.debounce); state.debounce = setTimeout(render, 160); }
     function showToast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
@@ -268,17 +313,21 @@
     function formatYmdLabel(s){ const m=/^(\d{4})(\d{2})(\d{2})/.exec(String(s||'')); return m? `${m[1]}/${m[2]}/${m[3]}` : null; }
     function safeHttpUrl(u){ if(!u) return ''; try{ const url=new URL(String(u)); return (url.protocol==='http:'||url.protocol==='https:') ? url.href : ''; }catch{ return ''; } }
 
-    /* スケルトン */
     function showSkeleton(){ const wrap=$('table'); wrap.innerHTML=''; for(let i=0;i<6;i++){ const sk=document.createElement('div'); sk.className='skeleton'; wrap.appendChild(sk); } }
     function clearSkeleton(){ $('table').innerHTML=''; }
 
-    /* kind の安全取得 */
     function getKindValue(){
       const el = document.getElementById('kind');
       return el ? el.value : 'all';
     }
 
-    /* 描画 */
+    function toSortableDate(dText){
+      if(!dText) return 0;
+      const m = dText.match(/^(\d{4})(\d{2})(\d{2})/);
+      if(!m) return 0;
+      return Number(m[1] + m[2] + m[3]);
+    }
+
     function render(){
       clearFallbackFlag();
 
@@ -302,7 +351,6 @@
 
       let filtered = state.rows;
 
-      // 文字検索（アーティスト名・曲名）
       if (q) {
         filtered = filtered.filter(([artist, title]) => {
           const a = normalize(artist), t = normalize(title);
@@ -310,10 +358,28 @@
         });
       }
 
-      // 対象フィルタ（C列 cText 完全一致）
       if (kind !== 'all') {
         filtered = filtered.filter(([, , cText]) => String(cText || '').trim() === kind);
       }
+
+      /* 並べ替え適用 */
+      const { key, dir } = state.sort;
+      filtered = filtered.slice().sort((r1, r2)=>{
+        let v1, v2;
+        if (key === 'artist'){
+          v1 = (r1[0] || '').toString();
+          v2 = (r2[0] || '').toString();
+          return v1.localeCompare(v2,'ja') * dir;
+        } else if (key === 'title'){
+          v1 = (r1[1] || '').toString();
+          v2 = (r2[1] || '').toString();
+          return v1.localeCompare(v2,'ja') * dir;
+        } else {
+          v1 = toSortableDate(r1[3] || r1[5] || '');
+          v2 = toSortableDate(r2[3] || r2[5] || '');
+          return (v1 - v2) * dir;
+        }
+      });
 
       const rows = filtered.slice(0, limit);
 
@@ -330,7 +396,6 @@
       hint.textContent = '';
 
       if (!isMobile) {
-        /* —— デスクトップ: 行分割（情報行＋操作行） —— */
         const table = document.createElement('table');
         table.className = 'stacked';
         const thead = document.createElement('thead');
@@ -342,7 +407,6 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
-          /* 1行目：楽曲情報（下線なし） */
           const trTop = document.createElement('tr'); trTop.className='item-top';
           const tdTop = document.createElement('td'); tdTop.style.borderBottom = 'none';
           const l1 = document.createElement('div'); l1.className='l1';
@@ -353,7 +417,6 @@
           tdTop.appendChild(l1); trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          /* 2行目：操作（上線なし・右寄せ） */
           const trOps = document.createElement('tr'); trOps.className='item-ops';
           const tdOps = document.createElement('td'); tdOps.style.borderTop = 'none';
           const ops = document.createElement('div'); ops.className='ops';
@@ -392,7 +455,6 @@
         $('mblist').style.display = 'none';
 
       } else {
-        /* —— モバイル表示 —— */
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
           const item=document.createElement('div'); item.className='item';
 
@@ -437,8 +499,6 @@
       }
     }
 
-    /* ===== 通信処理 ===== */
-
     function jsonpOnce(url, onerror, reqId){
       const s=document.createElement('script');
       s.src=url;
@@ -455,7 +515,6 @@
     function fetchRows(limit, attempt=0){
       const reqId = ++state.lastReqId;
 
-      /* 旧iframe監視を停止＆DOM掃除 */
       if (state.iframeTimer) {
         clearTimeout(state.iframeTimer);
         state.iframeTimer = null;
@@ -573,11 +632,9 @@
       if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
 
-    // オンライン/オフライン通知
     window.addEventListener('offline', ()=>{ setStatus('オフラインです。接続を確認してください。', {fallback:false}); });
     window.addEventListener('online',  ()=>{ setStatus('オンラインに復帰しました。再取得しています…', {fallback:false}); fetchRows(INITIAL_FETCH); });
 
-    // タブ復帰時の保険
     document.addEventListener('visibilitychange', ()=>{
       if (document.visibilityState === 'visible') {
         if ($('status')?.dataset?.fallback && (state.rows && state.rows.length)>0) {
@@ -589,8 +646,10 @@
     // 初回
     fetchRows(INITIAL_FETCH);
 
-    /* イベント */
+    // 検索
     $('q').addEventListener('input', scheduleSearch);
+
+    // 件数変更
     $('limit').addEventListener('change', ()=>{
       const raw = $('limit').value;
       if (raw === 'all' && (state.fetchedLimit||0) < (state.total||HARD_LIMIT)) {
@@ -601,17 +660,79 @@
       }
     });
 
-    // kind の変更で再描画（存在チェック込み）
+    // 対象変更
     (function(){
       const el = document.getElementById('kind');
       if (el) el.addEventListener('change', render);
+    })();
+
+    // 並べ替え表示ボタン
+    (function(){
+      const btn = $('show-sort');
+      const panel = $('sort-panel');
+      if (!btn || !panel) return;
+      btn.addEventListener('click', ()=>{
+        state.sort.panel = !state.sort.panel;
+        if (state.sort.panel){
+          panel.classList.add('is-open');
+          btn.textContent = '非表示';
+        }else{
+          panel.classList.remove('is-open');
+          btn.textContent = '表示';
+        }
+      });
+    })();
+
+    // 並べ替えボタン3つ
+    (function(){
+      const btnArtist = $('sort-artist');
+      const btnTitle  = $('sort-title');
+      const btnDate   = $('sort-date');
+      if (!btnArtist || !btnTitle || !btnDate) return;
+
+      function updateSortButtons(){
+        const { key, dir } = state.sort;
+        const m = { artist: btnArtist, title: btnTitle, date: btnDate };
+        Object.keys(m).forEach(k=>{
+          const b = m[k];
+          if (k === key){
+            b.classList.add('is-active');
+            if (k === 'artist') b.textContent = dir === 1 ? '歌手名順↑' : '歌手名順↓';
+            if (k === 'title')  b.textContent = dir === 1 ? '楽曲順↑' : '楽曲順↓';
+            if (k === 'date')   b.textContent = dir === 1 ? '投稿日順↑' : '投稿日順↓';
+          }else{
+            b.classList.remove('is-active');
+            if (k === 'artist') b.textContent = '歌手名順↑';
+            if (k === 'title')  b.textContent = '楽曲順↑';
+            if (k === 'date')   b.textContent = '投稿日順↑';
+          }
+        });
+      }
+
+      function toggleSort(targetKey){
+        if (state.sort.key === targetKey){
+          state.sort.dir = state.sort.dir * -1;
+        }else{
+          state.sort.key = targetKey;
+          state.sort.dir = 1;
+        }
+        updateSortButtons();
+        render();
+      }
+
+      btnArtist.addEventListener('click', ()=>toggleSort('artist'));
+      btnTitle.addEventListener('click',  ()=>toggleSort('title'));
+      btnDate.addEventListener('click',   ()=>toggleSort('date'));
+
+      // 初期表示分
+      updateSortButtons();
     })();
 
     const mq = window.matchMedia('(max-width: 768px)');
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
 
-    console.log('UI layout v20251023-2');
+    console.log('UI layout v20251023-2 + sort-panel + focus-unified');
   </script>
 </body>
 </html>
