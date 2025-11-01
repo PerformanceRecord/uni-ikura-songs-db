@@ -362,6 +362,13 @@
       font-size:13px;
       cursor:pointer;
       white-space:nowrap;
+
+      /* ▼ここを固定幅にする。PC・SPどちらでも同じにする */
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:5.6rem;   /* 「並び替え」にちょうどいい幅（約89〜90px） */
+      box-sizing:border-box;
     }
 
     .sort-btn:focus,
@@ -399,6 +406,7 @@
         </select>
       </div>
 
+      <!-- 幅固定済み -->
       <button id="show-sort" class="show-sort-btn" type="button">並び替え</button>
     </div>
 
@@ -1111,7 +1119,7 @@
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
 
-    console.log('UI layout fixed v20251023-2');
+    console.log('UI layout fixed v20251023-2 (with fixed sort toggle width)');
   </script>
 </body>
 </html>
