@@ -57,23 +57,10 @@
       min-width:0;
     }
 
-    .limit-wrap{
-      display:flex;
-      align-items:center;
-      gap:6px;
-    }
-    .limit-wrap label{
-      font-size:12px;
+    .muted{
       color:var(--muted);
-      white-space:nowrap;
+      font-size:13px;
     }
-
-    .type-wrap{
-      display:flex;
-      align-items:center;
-      gap:6px;
-    }
-    .muted{color:var(--muted);font-size:13px}
 
     input[type="search"],select{
       width:100%;
@@ -85,7 +72,6 @@
       color:#1a1a1a;
       outline:none;
     }
-
     input[type="search"]:focus,
     select:focus,
     .btn:focus,
@@ -153,6 +139,28 @@
       line-height:1.2;
       text-decoration:none;
       white-space:nowrap;
+      word-break:keep-all;
+    }
+    .btn-pill:hover{
+      background:#eef2f7;
+      text-decoration:none;
+    }
+
+    .skeleton{
+      height:16px;
+      background:#f1f5f9;
+      border-radius:6px;
+      margin:8px 0;
+      animation:pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%{opacity:.6}
+      50%{opacity:1}
+      100%{opacity:.6}
+    }
+    @media (prefers-reduced-motion: reduce){
+      .skeleton{animation:none}
+      .toast{transition:none}
     }
 
     .mobile-list{display:none}
@@ -160,8 +168,35 @@
     @media (max-width:768px){
       table{display:none}
       .mobile-list{display:block;margin-top:10px}
+      .item{
+        border-bottom:1px solid var(--line);
+        padding:12px 2px;
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+      }
+      .l1{
+        font-size:16px;
+        line-height:1.6;
+        font-weight:700;
+        display:flex;
+        gap:6px;
+        flex-wrap:wrap;
+      }
+      .l1 .sep{opacity:.6}
+      .l2{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        justify-content:flex-end;
+        flex-wrap:nowrap;
+        overflow:hidden;
+      }
+      .l2 .btn-pill{max-width:40vw}
+      .btn{padding:8px 12px;font-size:14px}
     }
 
+    /* ===== UI 行 ===== */
     .ui .row{
       display:flex;
       gap:8px;
@@ -170,35 +205,47 @@
     }
     .ui .row:first-child{margin-top:0}
 
-    /* ▼ここから並びをそろえるための調整 ▼ */
+    .limit-wrap,
+    .type-wrap{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .limit-wrap label,
+    .type-wrap label{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    /* ▼ ここで1行目を34pxに固定する ▼ */
     .ui .row1{
       display:flex;
-      gap:7px;
+      gap:8px;
       align-items:center;
       flex-wrap:nowrap;
     }
-    /* 1行目だけ高さを36pxで統一する */
     .ui .row1 select{
-      height:36px;
+      height:34px;          /* ←指定 */
       line-height:1.2;
       padding:6px 8px;
-      font-size:12px;
+      font-size:13px;
     }
     .ui .row1 .show-sort-btn{
-      height:36px;
-      min-width:5.6rem;
+      height:34px;          /* ←指定 */
+      min-width:5.4rem;     /* 「並び替え」に合わせた幅 */
       display:inline-flex;
       align-items:center;
       justify-content:center;
       border:1px solid var(--line);
       background:#fff;
       border-radius:8px;
-      font-size:12px;
+      font-size:13px;
       white-space:nowrap;
       box-sizing:border-box;
     }
-    /* ▲ここまでで「件数」「対象」「並び替え」が同じ枠高になる */
 
+    /* 並べ替えパネル */
     .ui .row1b{
       display:none;
       gap:8px;
@@ -222,11 +269,60 @@
       color:#0f172a;
       font-weight:600;
     }
+    .sort-btn:focus,
+    .show-sort-btn:focus{
+      outline:3px solid var(--focus);
+      outline-offset:2px;
+    }
+
+    /* ====== テーブル表示用レイアウト ====== */
+    table.stacked{table-layout:auto}
+    table.stacked .item-top{
+      background:#fff;
+      border-bottom:none;
+    }
+    table.stacked .item-ops{
+      background:#fff;
+    }
+    table.stacked .item-ops td{
+      border-top:none;
+    }
+    table.stacked .item-top .l1{
+      font-size:16px;
+      font-weight:700;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+    table.stacked .item-top .l1 .sep{opacity:.6}
+    table.stacked .item-ops .ops{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      overflow:visible;
+      min-width:0;
+    }
+
+    /* ▼ 操作列だけ2px小さくする上書き ▼ */
+    .item-ops .ops .btn-pill{
+      padding:6px 10px;     /* 元 8 12 → 2px小さく */
+      font-size:12px;       /* 1～2px落とす */
+      border-radius:8px;
+    }
+    .item-ops .ops .btn{
+      padding:6px 10px;     /* 元 8 12 → 2px小さく */
+      font-size:12px;
+      border-radius:8px;
+    }
   </style>
 </head>
 <body>
 
   <div class="card ui">
+    <!-- 1行目：件数 / 対象 / 並び替えトグル -->
     <div class="row row1">
       <div class="limit-wrap">
         <label for="limit">件数</label>
@@ -237,6 +333,7 @@
           <option value="all">全件</option>
         </select>
       </div>
+
       <div class="type-wrap">
         <label for="kind">対象</label>
         <select id="kind" aria-label="対象フィルタ">
@@ -245,45 +342,54 @@
           <option value="ショート">ショート</option>
         </select>
       </div>
+
       <button id="show-sort" class="show-sort-btn" type="button">並び替え</button>
     </div>
 
+    <!-- 並べ替えボタン行 -->
     <div class="row row1b" id="sort-panel" aria-label="並べ替え">
       <button type="button" class="sort-btn" data-sort="artist" id="sort-artist">歌手名順↑</button>
       <button type="button" class="sort-btn" data-sort="title"  id="sort-title">楽曲順↑</button>
       <button type="button" class="sort-btn" data-sort="date"   id="sort-date">投稿日順↑</button>
     </div>
 
+    <!-- 検索 -->
     <div class="row row2">
       <input class="search" id="q" type="search" placeholder="曲名／アーティスト名で検索" autocomplete="off">
     </div>
 
+    <!-- 弾幕コピー -->
     <div class="row row3">
       <select id="dm-select" title="弾幕を選択">
         <option value="🍣🧡🍣🧡🍣🧡">🍣🧡🍣</option>
         <option value="🍣🧡🎶🍣🧡🎶">🍣🧡🎶</option>
       </select>
-      <button id="dm-copy" class="btn" type="button" title="選択した弾幕をコピー">コピー</button>
+      <button id="dm-copy" class="btn btn-full" type="button" title="選択した弾幕をコピー">コピー</button>
     </div>
 
+    <!-- ステータス -->
     <div class="row row4">
       <div class="muted" id="status" role="status" aria-live="polite">読み込み中…</div>
     </div>
   </div>
 
+  <!-- 結果表示 -->
   <div class="card" style="margin-top:12px;">
     <div class="muted" id="hint">検索結果がここに表示されます。</div>
     <div id="table" style="display:none;"></div>
     <div id="mblist" class="mobile-list" style="display:none;"></div>
   </div>
 
+  <!-- トースト -->
   <div id="toast" class="toast" role="status" aria-live="polite">コピーしました</div>
 
   <script>
+    /* ===== 設定 ===== */
     const API_URL       = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
     const SHEET_KEY     = 'perf';
     const INITIAL_FETCH = 250;
     const HARD_LIMIT    = 500;
+
     const JSONP_TIMEOUT_MS   = 6500;
     const SHORT_TRY_MS       = 1500;
     const MAX_RETRY          = 2;
@@ -310,8 +416,11 @@
       const el = $('status');
       if (!el) return;
       el.textContent = text;
-      if (opts.fallback) el.dataset.fallback = '1';
-      else delete el.dataset.fallback;
+      if (opts.fallback){
+        el.dataset.fallback = '1';
+      }else{
+        delete el.dataset.fallback;
+      }
     }
 
     function clearFallbackFlag(){
@@ -343,8 +452,9 @@
     async function copyPair(title, artist){
       const text = ((title||'').trim() + ' / ' + (artist||'').trim()).trim();
       try{
-        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
-        else{
+        if (navigator.clipboard?.writeText){
+          await navigator.clipboard.writeText(text);
+        }else{
           const ta = document.createElement('textarea');
           ta.value = text;
           document.body.appendChild(ta);
@@ -361,8 +471,9 @@
     $('dm-copy').addEventListener('click', async ()=>{
       const text = $('dm-select').value || '';
       try{
-        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
-        else{
+        if (navigator.clipboard?.writeText){
+          await navigator.clipboard.writeText(text);
+        }else{
           const ta = document.createElement('textarea');
           ta.value = text;
           document.body.appendChild(ta);
@@ -392,20 +503,24 @@
       try{
         const url = new URL(String(u));
         return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : '';
-      }catch{ return ''; }
+      }catch{
+        return '';
+      }
     }
 
     function showSkeleton(){
       const wrap = $('table');
       wrap.innerHTML = '';
-      for(let i=0;i<6;i++){
+      for (let i=0;i<6;i++){
         const sk = document.createElement('div');
-        sk.className='skeleton';
+        sk.className = 'skeleton';
         wrap.appendChild(sk);
       }
     }
 
-    function clearSkeleton(){ $('table').innerHTML=''; }
+    function clearSkeleton(){
+      $('table').innerHTML = '';
+    }
 
     function getKindValue(){
       const el = $('kind');
@@ -416,7 +531,9 @@
       if (!dText) return 0;
       const digits = String(dText).replace(/\D/g,'');
       if (digits.length < 8) return 0;
-      const y = digits.slice(0,4), m = digits.slice(4,6), d = digits.slice(6,8);
+      const y = digits.slice(0,4);
+      const m = digits.slice(4,6);
+      const d = digits.slice(6,8);
       return Number(y+m+d);
     }
 
@@ -429,8 +546,9 @@
 
       tableWrap.innerHTML = '';
       listWrap.innerHTML  = '';
-      tableWrap.style.display='none';
-      listWrap.style.display='none';
+
+      tableWrap.style.display = 'none';
+      listWrap.style.display  = 'none';
 
       const isMobile = window.matchMedia('(max-width: 768px)').matches;
       const q        = normalize($('q').value || '');
@@ -439,17 +557,19 @@
 
       const limit = (rawLimit === 'all')
         ? Math.min(HARD_LIMIT, state.total || state.rows.length)
-        : Math.min(parseInt(rawLimit,10)||20, HARD_LIMIT);
+        : Math.min(parseInt(rawLimit,10) || 20, HARD_LIMIT);
       const limitLabel = (rawLimit === 'all') ? '全件' : `${limit}件`;
 
       let filtered = state.rows;
 
       if (q){
         filtered = filtered.filter(([artist, title])=>{
-          const a = normalize(artist), t = normalize(title);
+          const a = normalize(artist);
+          const t = normalize(title);
           return a.includes(q) || t.includes(q);
         });
       }
+
       if (kind !== 'all'){
         filtered = filtered.filter(([, , cText]) => String(cText || '').trim() === kind);
       }
@@ -457,38 +577,44 @@
       const { key, dir } = state.sort;
       filtered = filtered.slice().sort((r1, r2)=>{
         if (key === 'artist'){
-          return (r1[0]||'').toString().localeCompare((r2[0]||'').toString(),'ja') * dir;
+          const v1 = (r1[0] || '').toString();
+          const v2 = (r2[0] || '').toString();
+          return v1.localeCompare(v2, 'ja') * dir;
         }
         if (key === 'title'){
-          return (r1[1]||'').toString().localeCompare((r2[1]||'').toString(),'ja') * dir;
+          const v1 = (r1[1] || '').toString();
+          const v2 = (r2[1] || '').toString();
+          return v1.localeCompare(v2, 'ja') * dir;
         }
-        let v1 = toSortableDate(r1[3]||'');
-        let v2 = toSortableDate(r2[3]||'');
-        if (v1===0 && r1[5]) v1 = toSortableDate(r1[5]);
-        if (v2===0 && r2[5]) v2 = toSortableDate(r2[5]);
+        let v1 = toSortableDate(r1[3] || '');
+        let v2 = toSortableDate(r2[3] || '');
+        if (v1 === 0 && r1[5]) v1 = toSortableDate(r1[5]);
+        if (v2 === 0 && r2[5]) v2 = toSortableDate(r2[5]);
         return (v1 - v2) * dir;
       });
 
       const rows = filtered.slice(0, limit);
 
-      setStatus(
-        (q || kind !== 'all')
-          ? `表示中 ${rows.length}件ヒット（対象${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`
-          : `表示中 ${rows.length}件ヒット（全${state.total}件）／表示上限 ${limitLabel}`
-      );
+      if (q || kind !== 'all'){
+        setStatus(`表示中 ${rows.length}件ヒット（対象${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`);
+      }else{
+        setStatus(`表示中 ${rows.length}件ヒット（全${state.total}件）／表示上限 ${limitLabel}`);
+      }
 
       if (!rows.length){
         hint.textContent = (q || kind !== 'all') ? '該当なし' : '検索結果がここに表示されます。';
         return;
       }
-      hint.textContent='';
+      hint.textContent = '';
 
       if (!isMobile){
         const table = document.createElement('table');
+        table.className = 'stacked';
+
         const thead = document.createElement('thead');
         const trh   = document.createElement('tr');
         const th    = document.createElement('th');
-        th.textContent='アーティスト／楽曲情報';
+        th.textContent = 'アーティスト／楽曲情報';
         trh.appendChild(th);
         thead.appendChild(trh);
         table.appendChild(thead);
@@ -496,23 +622,26 @@
         const tbody = document.createElement('tbody');
 
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
+          // 上段
           const trTop = document.createElement('tr');
-          trTop.className='item-top';
+          trTop.className = 'item-top';
           const tdTop = document.createElement('td');
-          tdTop.style.borderBottom='none';
+          tdTop.style.borderBottom = 'none';
 
           const l1 = document.createElement('div');
-          l1.className='l1';
+          l1.className = 'l1';
 
           const a1 = document.createElement('span');
-          a1.className='artist';
-          a1.textContent = artist||'';
+          a1.className = 'artist';
+          a1.textContent = artist || '';
+
           const sep = document.createElement('span');
-          sep.className='sep';
-          sep.textContent='/';
+          sep.className = 'sep';
+          sep.textContent = '/';
+
           const t1 = document.createElement('span');
-          t1.className='title';
-          t1.textContent=title||'';
+          t1.className = 'title';
+          t1.textContent = title || '';
 
           l1.appendChild(a1);
           l1.appendChild(sep);
@@ -522,43 +651,44 @@
           trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
+          // 下段（操作列）
           const trOps = document.createElement('tr');
-          trOps.className='item-ops';
+          trOps.className = 'item-ops';
           const tdOps = document.createElement('td');
-          tdOps.style.borderTop='none';
+          tdOps.style.borderTop = 'none';
 
           const ops = document.createElement('div');
-          ops.className='ops';
+          ops.className = 'ops';
 
           const cHref = safeHttpUrl(cUrl) || safeHttpUrl(urlFromText(cText));
           if (cHref){
-            const aC=document.createElement('a');
-            aC.href=cHref;
-            aC.target='_blank';
-            aC.rel='noopener noreferrer';
-            aC.className='btn-pill';
-            aC.title=cText||'リンク';
-            aC.textContent=cText||'リンク';
+            const aC = document.createElement('a');
+            aC.href = cHref;
+            aC.target = '_blank';
+            aC.rel = 'noopener noreferrer';
+            aC.className = 'btn-pill';
+            aC.title = cText || 'リンク';
+            aC.textContent = cText || 'リンク';
             ops.appendChild(aC);
           }
 
-          const dHref = safeHttpUrl(dUrl) || safeHttpUrl(urlFromText(dText));
+          const dHref  = safeHttpUrl(dUrl) || safeHttpUrl(urlFromText(dText));
           const dLabel = formatYmdLabel(dText);
           if (dHref){
-            const aD=document.createElement('a');
-            aD.href=dHref;
-            aD.target='_blank';
-            aD.rel='noopener noreferrer';
-            aD.className='btn-pill';
-            aD.title=dLabel ? `前回 ${dLabel}` : '前回';
-            aD.textContent=dLabel ? `▶前回${dLabel}` : '▶前回';
+            const aD = document.createElement('a');
+            aD.href = dHref;
+            aD.target = '_blank';
+            aD.rel = 'noopener noreferrer';
+            aD.className = 'btn-pill';
+            aD.title = dLabel ? `前回 ${dLabel}` : '前回';
+            aD.textContent = dLabel ? `▶前回${dLabel}` : '▶前回';
             ops.appendChild(aD);
           }
 
-          const btn=document.createElement('button');
-          btn.className='btn';
-          btn.textContent='コピー';
-          btn.addEventListener('click',()=>copyPair(title,artist));
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = 'コピー';
+          btn.addEventListener('click', ()=>copyPair(title, artist));
           ops.appendChild(btn);
 
           tdOps.appendChild(ops);
@@ -568,61 +698,64 @@
 
         table.appendChild(tbody);
         tableWrap.appendChild(table);
-        tableWrap.style.display='block';
+        tableWrap.style.display = 'block';
+        $('mblist').style.display = 'none';
       }else{
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
-          const item=document.createElement('div');
-          item.className='item';
+          const item = document.createElement('div');
+          item.className = 'item';
 
-          const l1=document.createElement('div');
-          l1.className='l1';
+          const l1 = document.createElement('div');
+          l1.className = 'l1';
 
-          const a1=document.createElement('span');
-          a1.className='artist';
-          a1.textContent=artist||'';
-          const sep=document.createElement('span');
-          sep.className='sep';
-          sep.textContent='/';
-          const t1=document.createElement('span');
-          t1.className='title';
-          t1.textContent=title||'';
+          const a1 = document.createElement('span');
+          a1.className = 'artist';
+          a1.textContent = artist || '';
+
+          const sep = document.createElement('span');
+          sep.className = 'sep';
+          sep.textContent = '/';
+
+          const t1 = document.createElement('span');
+          t1.className = 'title';
+          t1.textContent = title || '';
 
           l1.appendChild(a1);
           l1.appendChild(sep);
           l1.appendChild(t1);
 
-          const l2=document.createElement('div');
-          l2.className='l2';
+          const l2 = document.createElement('div');
+          l2.className = 'l2';
 
           const cHref = safeHttpUrl(cUrl) || safeHttpUrl(urlFromText(cText));
           if (cHref){
-            const aC=document.createElement('a');
-            aC.href=cHref;
-            aC.target='_blank';
-            aC.rel='noopener noreferrer';
-            aC.className='btn-pill';
-            aC.title=cText||'リンク';
-            aC.textContent=cText||'リンク';
+            const aC = document.createElement('a');
+            aC.href = cHref;
+            aC.target = '_blank';
+            aC.rel = 'noopener noreferrer';
+            aC.className = 'btn-pill';
+            aC.title = cText || 'リンク';
+            aC.textContent = cText || 'リンク';
             l2.appendChild(aC);
           }
 
-          const dHref = safeHttpUrl(dUrl) || safeHttpUrl(urlFromText(dText));
+          const dHref  = safeHttpUrl(dUrl) || safeHttpUrl(urlFromText(dText));
           const dLabel = formatYmdLabel(dText);
           if (dHref){
-            const aD=document.createElement('a');
-            aD.href=dHref;
-            aD.target='_blank';
-            aD.rel='noopener noreferrer';
-            aD.className='btn-pill';
-            aD.title=dLabel ? `前回 ${dLabel}` : '前回';
-            aD.textContent=dLabel ? `▶前回${dLabel}` : '▶前回';
+            const aD = document.createElement('a');
+            aD.href = dHref;
+            aD.target = '_blank';
+            aD.rel = 'noopener noreferrer';
+            aD.className = 'btn-pill';
+            aD.title = dLabel ? `前回 ${dLabel}` : '前回';
+            aD.textContent = dLabel ? `▶前回${dLabel}` : '▶前回';
             l2.appendChild(aD);
           }
 
-          const btn=document.createElement('button');
-          btn.className='btn';
-          btn.textContent='コピー';
-          btn.addEventListener('click',()=>copyPair(title,artist));
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = 'コピー';
+          btn.addEventListener('click', ()=>copyPair(title, artist));
           l2.appendChild(btn);
 
           item.appendChild(l1);
@@ -630,25 +763,30 @@
           $('mblist').appendChild(item);
         });
 
-        $('mblist').style.display='block';
+        $('mblist').style.display = 'block';
       }
     }
 
     function jsonpOnce(url, onerror, reqId){
-      const s=document.createElement('script');
-      s.src=url;
-      s.async=true;
-      s.dataset.jsonp=String(reqId||'');
-      s.onerror=()=>{ try{s.remove();}catch{}; onerror && onerror(); };
+      const s = document.createElement('script');
+      s.src = url;
+      s.async = true;
+      s.dataset.jsonp = String(reqId || '');
+      s.onerror = ()=>{
+        try{ s.remove(); }catch{}
+        if (onerror) onerror();
+      };
       document.head.appendChild(s);
     }
 
     function cleanupJsonpScripts(reqId){
       const sel = reqId ? `script[data-jsonp="${reqId}"]` : 'script[data-jsonp]';
-      document.querySelectorAll(sel).forEach(el=>{ try{el.remove();}catch{}; });
+      document.querySelectorAll(sel).forEach(el=>{
+        try{ el.remove(); }catch{}
+      });
     }
 
-    function fetchRows(limit, attempt=0){
+    function fetchRows(limit, attempt = 0){
       const reqId = ++state.lastReqId;
 
       if (state.iframeTimer){
@@ -659,10 +797,10 @@
       const prev = document.getElementById('gviz-frame');
       if (prev) prev.remove();
 
-      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
-      const url = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
+      const base = API_URL.replace(/\/macros\/u\/\d+\//, '/macros/');
+      const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit, HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
-      setStatus(attempt===0 ? '読み込み中…' : `読み込み中…（${attempt}）`);
+      setStatus(attempt === 0 ? '読み込み中…' : `読み込み中…（${attempt}）`);
       showSkeleton();
 
       let settled = false;
@@ -672,6 +810,7 @@
         if (settled) return;
         if (reqId !== state.lastReqId) return;
         settled = true;
+
         clearTimeout(state.shortTimer);
         clearTimeout(state.globalTimer);
 
@@ -683,19 +822,22 @@
             return;
           }
 
-          const rows = (payload.rows||[])
-            .map(r=>[
-              r.artist||'',
-              r.title ||'',
-              r.cText ||'',
-              r.dText ||'',
-              r.cUrl  ||'',
-              r.dUrl  ||''
+          const rows = (payload.rows || [])
+            .map(r => [
+              r.artist || '',
+              r.title  || '',
+              r.cText  || '',
+              r.dText  || '',
+              r.cUrl   || '',
+              r.dUrl   || ''
             ])
-            .filter(([a,b])=>((a||'')+(b||'')).trim()!=='');
-          state.rows = rows;
+            .filter(([a, b]) => ((a || '') + (b || '')).trim() !== '');
+
+          state.rows  = rows;
           state.total = Number(
-            (payload.total ?? null) != null ? payload.total : (payload.matched ?? rows.length)
+            (payload.total ?? null) != null
+              ? payload.total
+              : (payload.matched ?? rows.length)
           );
 
           const f = document.getElementById('gviz-frame');
@@ -709,7 +851,7 @@
           state.iframeReqId = null;
 
           cleanupJsonpScripts(reqId);
-          state.fetchedLimit = Math.max(state.fetchedLimit||0, state.rows.length);
+          state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
 
           setStatus(`読み込み完了：${state.rows.length}件（全${state.total}件）`);
           clearSkeleton();
@@ -722,12 +864,18 @@
         }
       };
 
+      // 短時間リトライ
       state.shortTimer = setTimeout(()=>{
-        if (!settled && attempt < MAX_RETRY) fetchRows(limit, attempt+1);
+        if (!settled && attempt < MAX_RETRY){
+          fetchRows(limit, attempt + 1);
+        }
       }, SHORT_TRY_MS);
 
+      // 全体タイムアウト → iframe
       state.globalTimer = setTimeout(()=>{
-        if (!settled && reqId === state.lastReqId) tryIframeFallback(limit, reqId, 'jsonp-timeout');
+        if (!settled && reqId === state.lastReqId){
+          tryIframeFallback(limit, reqId, 'jsonp-timeout');
+        }
       }, JSONP_TIMEOUT_MS);
 
       jsonpOnce(url, ()=>{}, reqId);
@@ -737,22 +885,23 @@
       if (reqId !== state.lastReqId) return;
       if ((state.rows && state.rows.length) > 0) return;
       if (state.usedIframe) return;
+
       state.usedIframe = true;
       setStatus(`別ルートで取得中…（${reason}）`, {fallback:true});
 
       const old = document.getElementById('gviz-frame');
       if (old) old.remove();
 
-      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
-      const urlFrame = `${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
+      const base = API_URL.replace(/\/macros\/u\/\d+\//, '/macros/');
+      const urlFrame = `${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit, HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
       const f = document.createElement('iframe');
       f.id = 'gviz-frame';
       f.src = urlFrame;
-      f.style.display='none';
-      f.width=0;
-      f.height=0;
-      f.tabIndex=-1;
+      f.style.display = 'none';
+      f.width = 0;
+      f.height = 0;
+      f.tabIndex = -1;
       document.body.appendChild(f);
 
       clearTimeout(state.iframeTimer);
@@ -761,6 +910,7 @@
         if (state.lastReqId !== reqId) return;
         if (!$('status')?.dataset?.fallback) return;
         if ((state.rows && state.rows.length) > 0) return;
+
         setStatus('取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）');
         const g = document.getElementById('gviz-frame');
         if (g) g.remove();
@@ -773,24 +923,34 @@
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
       clearFallbackFlag();
-      if (typeof state.pendingHandler==='function') state.pendingHandler(d.payload);
+      if (typeof state.pendingHandler === 'function') state.pendingHandler(d.payload);
     });
 
-    window.addEventListener('offline', ()=>{ setStatus('オフラインです。接続を確認してください。'); });
-    window.addEventListener('online', ()=>{ setStatus('オンラインに復帰しました。再取得しています…'); fetchRows(INITIAL_FETCH); });
+    window.addEventListener('offline', ()=>{
+      setStatus('オフラインです。接続を確認してください。');
+    });
+
+    window.addEventListener('online', ()=>{
+      setStatus('オンラインに復帰しました。再取得しています…');
+      fetchRows(INITIAL_FETCH);
+    });
 
     document.addEventListener('visibilitychange', ()=>{
       if (document.visibilityState === 'visible'){
-        if ($('status')?.dataset?.fallback && (state.rows && state.rows.length)>0) clearFallbackFlag();
+        if ($('status')?.dataset?.fallback && (state.rows && state.rows.length) > 0){
+          clearFallbackFlag();
+        }
       }
     });
 
+    /* 初期化 */
     fetchRows(INITIAL_FETCH);
 
     $('q').addEventListener('input', scheduleSearch);
+
     $('limit').addEventListener('change', ()=>{
       const raw = $('limit').value;
-      if (raw === 'all' && (state.fetchedLimit||0) < (state.total||HARD_LIMIT)){
+      if (raw === 'all' && (state.fetchedLimit || 0) < (state.total || HARD_LIMIT)){
         setStatus('全件を取得しています…');
         fetchRows(HARD_LIMIT);
       }else{
@@ -804,7 +964,7 @@
     })();
 
     (function(){
-      const btn = $('show-sort');
+      const btn   = $('show-sort');
       const panel = $('sort-panel');
       if (!btn || !panel) return;
       btn.addEventListener('click', ()=>{
@@ -827,9 +987,9 @@
 
       function updateSortButtons(){
         const { key, dir } = state.sort;
-        const map = {artist:btnArtist,title:btnTitle,date:btnDate};
-        Object.keys(map).forEach(k=>{
-          const b = map[k];
+        const m = { artist:btnArtist, title:btnTitle, date:btnDate };
+        Object.keys(m).forEach(k=>{
+          const b = m[k];
           if (k === key){
             b.classList.add('is-active');
             if (k === 'artist') b.textContent = dir === 1 ? '歌手名順↑' : '歌手名順↓';
