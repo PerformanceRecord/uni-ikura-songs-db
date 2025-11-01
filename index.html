@@ -6,7 +6,6 @@
   <meta name="theme-color" content="#ffb744">
   <title>雲丹ゐくら歌唱曲DB</title>
 
-  <!-- preconnect / icon -->
   <link rel="dns-prefetch" href="https://script.google.com">
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="dns-prefetch" href="https://script.googleusercontent.com">
@@ -243,7 +242,6 @@
     @media (max-width:768px){
       table{display:none}
       .mobile-list{display:block;margin-top:10px}
-
       .item{
         border-bottom:1px solid var(--line);
         padding:12px 2px;
@@ -302,7 +300,7 @@
       line-height:1.2;
     }
 
-    /* ▼ ここから上書き（要望対応） ▼ */
+    /* ▼ 並べ替えUIの上書き ▼ */
     .ui .row1{
       display:flex;
       gap:8px;
@@ -330,7 +328,6 @@
       line-height:1.2;
     }
 
-    /* 並べ替え段（初期は非表示） */
     .ui .row1b{
       display:none;
       gap:8px;
@@ -367,7 +364,6 @@
       white-space:nowrap;
     }
 
-    /* フォーカス統一 */
     .sort-btn:focus,
     .show-sort-btn:focus{
       outline:3px solid var(--focus);
@@ -377,14 +373,12 @@
       outline:3px solid var(--focus);
       outline-offset:2px;
     }
-    /* ▲ ここまで上書き ▲ */
   </style>
 </head>
 <body>
 
-  <!-- UIカード -->
   <div class="card ui">
-    <!-- 1列目：件数 / 対象 / 表示ボタン -->
+    <!-- 1列目：件数 / 対象 / 並べ替えトグル -->
     <div class="row row1">
       <div class="limit-wrap">
         <label for="limit">件数</label>
@@ -405,23 +399,22 @@
         </select>
       </div>
 
-      <!-- 並べ替え表示切替 -->
       <button id="show-sort" class="show-sort-btn" type="button">表示</button>
     </div>
 
-    <!-- 1.5列目：並べ替えボタン群（初期非表示） -->
+    <!-- 並べ替えボタン群 -->
     <div class="row row1b" id="sort-panel" aria-label="並べ替え">
       <button type="button" class="sort-btn" data-sort="artist" id="sort-artist">歌手名順↑</button>
       <button type="button" class="sort-btn" data-sort="title"  id="sort-title">楽曲順↑</button>
       <button type="button" class="sort-btn" data-sort="date"   id="sort-date">投稿日順↑</button>
     </div>
 
-    <!-- 2列目：楽曲検索 -->
+    <!-- 2列目：検索 -->
     <div class="row row2">
       <input class="search" id="q" type="search" placeholder="曲名／アーティスト名で検索" autocomplete="off">
     </div>
 
-    <!-- 3列目：弾幕選択 / コピー -->
+    <!-- 3列目：弾幕コピー -->
     <div class="row row3 dm-wrap" aria-label="弾幕コピー">
       <div class="dm-select-wrap">
         <select id="dm-select" title="弾幕を選択">
@@ -440,7 +433,7 @@
     </div>
   </div>
 
-  <!-- 結果表示 -->
+  <!-- 結果表示カード -->
   <div class="card" style="margin-top:12px;">
     <div class="muted" id="hint">検索結果がここに表示されます。</div>
     <div id="table" style="display:none;"></div>
@@ -452,8 +445,8 @@
 
   <script>
     /* ===== 設定 ===== */
-    const API_URL     = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
-    const SHEET_KEY   = 'perf';
+    const API_URL       = 'https://script.google.com/macros/s/AKfycbxf6Ifxokz6W9w6E1KOwQxapCgpZAR1WE1VPn9MDnMIXLfRuLAqZwx9HyVzMyuC6nITJA/exec';
+    const SHEET_KEY     = 'perf';
     const INITIAL_FETCH = 250;
     const HARD_LIMIT    = 500;
 
@@ -474,23 +467,25 @@
       shortTimer: null,
       iframeTimer: null,
       iframeReqId: null,
-      /* 並べ替え状態 */
       sort: {
-        key: 'artist',   // artist | title | date
-        dir: 1,          // 1 = ASC, -1 = DESC
-        panel: false     // 並べ替え段の表示/非表示
+        key: 'artist',  // artist | title | date
+        dir: 1,
+        panel: false
       }
     };
 
-    /* ===== 基本ユーティリティ ===== */
+    /* ===== ユーティリティ ===== */
     function $(id){ return document.getElementById(id); }
 
-    function setStatus(text, opts={}){
+    function setStatus(text, opts = {}){
       const el = $('status');
       if (!el) return;
       el.textContent = text;
-      if (opts.fallback) el.dataset.fallback = '1';
-      else delete el.dataset.fallback;
+      if (opts.fallback){
+        el.dataset.fallback = '1';
+      } else {
+        delete el.dataset.fallback;
+      }
     }
 
     function clearFallbackFlag(){
@@ -498,17 +493,16 @@
       if (el) delete el.dataset.fallback;
     }
 
-    // JSONPコールバックを window に出しておく
     window.onGviz = function(payload){
       clearFallbackFlag();
       if (typeof state.pendingHandler === 'function') state.pendingHandler(payload);
     };
 
     function normalize(s){
-      return (s||'')
+      return (s || '')
         .toString()
         .toLowerCase()
-        .replace(/\s+/g,' ')
+        .replace(/\s+/g, ' ')
         .trim();
     }
 
@@ -525,11 +519,11 @@
     }
 
     async function copyPair(title, artist){
-      const text = ${(title||'').trim()} / ${(artist||'').trim()}.trim();
+      let text = ((title || '').trim() + ' / ' + (artist || '').trim()).trim();
       try{
         if (navigator.clipboard?.writeText){
           await navigator.clipboard.writeText(text);
-        } else {
+        }else{
           const ta = document.createElement('textarea');
           ta.value = text;
           document.body.appendChild(ta);
@@ -538,7 +532,7 @@
           ta.remove();
         }
         showToast('コピーしました：' + text);
-      }catch{
+      }catch(e){
         showToast('コピーに失敗しました');
       }
     }
@@ -548,7 +542,7 @@
       try{
         if (navigator.clipboard?.writeText){
           await navigator.clipboard.writeText(text);
-        } else {
+        }else{
           const ta = document.createElement('textarea');
           ta.value = text;
           document.body.appendChild(ta);
@@ -557,7 +551,7 @@
           ta.remove();
         }
         showToast('弾幕をコピーしました');
-      }catch{
+      }catch(e){
         showToast('弾幕のコピーに失敗しました');
       }
     });
@@ -569,16 +563,16 @@
     }
 
     function formatYmdLabel(s){
-      const m = /^(\d{4})(\d{2})(\d{2})/.exec(String(s||''));
-      return m ? ${m[1]}/${m[2]}/${m[3]} : null;
+      const m = /^(\d{4})(\d{2})(\d{2})/.exec(String(s || ''));
+      return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
     }
 
     function safeHttpUrl(u){
       if (!u) return '';
       try{
         const url = new URL(String(u));
-        return (url.protocol==='http:'||url.protocol==='https:') ? url.href : '';
-      }catch{
+        return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : '';
+      }catch(e){
         return '';
       }
     }
@@ -598,14 +592,13 @@
     }
 
     function getKindValue(){
-      const el = document.getElementById('kind');
+      const el = $('kind');
       return el ? el.value : 'all';
     }
 
-    /* ★ D列(文字)の冒頭8桁を最優先で取る日付変換 */
+    // D列から日付を抜く
     function toSortableDate(dText){
       if (!dText) return 0;
-      // 数字以外を全部落とす（"2025/10/30 前回" → "20251030"）
       const digits = String(dText).replace(/\D/g, '');
       if (digits.length < 8) return 0;
       const y = digits.slice(0,4);
@@ -638,7 +631,7 @@
         ? Math.min(HARD_LIMIT, state.total || state.rows.length)
         : Math.min(parseInt(rawLimit,10) || 20, HARD_LIMIT);
 
-      const limitLabel = (rawLimit === 'all') ? '全件' : ${limit}件;
+      const limitLabel = (rawLimit === 'all') ? '全件' : `${limit}件`;
 
       let filtered = state.rows;
 
@@ -659,32 +652,35 @@
       // 並べ替え
       const { key, dir } = state.sort;
       filtered = filtered.slice().sort((r1, r2)=>{
-        let v1, v2;
         if (key === 'artist'){
-          v1 = (r1[0] || '').toString();
-          v2 = (r2[0] || '').toString();
+          const v1 = (r1[0] || '').toString();
+          const v2 = (r2[0] || '').toString();
           return v1.localeCompare(v2, 'ja') * dir;
-        } else if (key === 'title'){
-          v1 = (r1[1] || '').toString();
-          v2 = (r2[1] || '').toString();
-          return v1.localeCompare(v2, 'ja') * dir;
-        } else {
-          // 投稿日順：まずD列(文字)から日付を強制抽出、それでダメならURL側を一応見る
-          v1 = toSortableDate(r1[3] || '');
-          v2 = toSortableDate(r2[3] || '');
-          if (v1 === 0 && r1[5]) v1 = toSortableDate(r1[5]);
-          if (v2 === 0 && r2[5]) v2 = toSortableDate(r2[5]);
-          return (v1 - v2) * dir;
         }
+        if (key === 'title'){
+          const v1 = (r1[1] || '').toString();
+          const v2 = (r2[1] || '').toString();
+          return v1.localeCompare(v2, 'ja') * dir;
+        }
+        // date
+        let v1 = toSortableDate(r1[3] || '');
+        let v2 = toSortableDate(r2[3] || '');
+        if (v1 === 0 && r1[5]) v1 = toSortableDate(r1[5]);
+        if (v2 === 0 && r2[5]) v2 = toSortableDate(r2[5]);
+        return (v1 - v2) * dir;
       });
 
       const rows = filtered.slice(0, limit);
 
-      setStatus(
-        (q || kind !== 'all')
-          ? 表示中 ${rows.length}件ヒット（対象${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}
-          : 表示中 ${rows.length}件ヒット（全${state.total}件）／表示上限 ${limitLabel}
-      );
+      if (q || kind !== 'all'){
+        setStatus(
+          `表示中 ${rows.length}件ヒット（対象${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`
+        );
+      }else{
+        setStatus(
+          `表示中 ${rows.length}件ヒット（全${state.total}件）／表示上限 ${limitLabel}`
+        );
+      }
 
       if (rows.length === 0){
         hint.textContent = (q || kind !== 'all') ? '該当なし' : '検索結果がここに表示されます。';
@@ -716,7 +712,7 @@
           const l1 = document.createElement('div');
           l1.className = 'l1';
 
-          const a1  = document.createElement('span');
+          const a1 = document.createElement('span');
           a1.className = 'artist';
           a1.textContent = artist || '';
 
@@ -724,7 +720,7 @@
           sep.className = 'sep';
           sep.textContent = '/';
 
-          const t1  = document.createElement('span');
+          const t1 = document.createElement('span');
           t1.className = 'title';
           t1.textContent = title || '';
 
@@ -757,7 +753,6 @@
             ops.appendChild(aC);
           }
 
-          // URLがあるときだけ表示
           const dHref  = safeHttpUrl(dUrl) || safeHttpUrl(urlFromText(dText));
           const dLabel = formatYmdLabel(dText);
           if (dHref){
@@ -766,8 +761,8 @@
             aD.target = '_blank';
             aD.rel    = 'noopener noreferrer';
             aD.className = 'btn-pill';
-            aD.title = dLabel ? 前回 ${dLabel} : '前回';
-            aD.textContent = dLabel ? ▶前回${dLabel} : '▶前回';
+            aD.title = dLabel ? `前回 ${dLabel}` : '前回';
+            aD.textContent = dLabel ? `▶前回${dLabel}` : '▶前回';
             ops.appendChild(aD);
           }
 
@@ -785,16 +780,15 @@
         table.appendChild(tbody);
         tableWrap.appendChild(table);
         tableWrap.style.display = 'block';
-
         $('mblist').style.display = 'none';
-
-      } else {
+      }else{
         rows.forEach(([artist, title, cText, dText, cUrl, dUrl])=>{
           const item = document.createElement('div');
           item.className = 'item';
 
           const l1 = document.createElement('div');
           l1.className = 'l1';
+
           const a1 = document.createElement('span');
           a1.className = 'artist';
           a1.textContent = artist || '';
@@ -834,8 +828,8 @@
             aD.target = '_blank';
             aD.rel = 'noopener noreferrer';
             aD.className = 'btn-pill';
-            aD.title = dLabel ? 前回 ${dLabel} : '前回';
-            aD.textContent = dLabel ? ▶前回${dLabel} : '▶前回';
+            aD.title = dLabel ? `前回 ${dLabel}` : '前回';
+            aD.textContent = dLabel ? `▶前回${dLabel}` : '▶前回';
             l2.appendChild(aD);
           }
 
@@ -854,47 +848,42 @@
       }
     }
 
-    /* ===== JSONP / 取得まわり ===== */
+    /* ===== JSONP まわり ===== */
     function jsonpOnce(url, onerror, reqId){
       const s = document.createElement('script');
-      s.src   = url;
+      s.src = url;
       s.async = true;
-      s.dataset.jsonp = String(reqId||'');
+      s.dataset.jsonp = String(reqId || '');
       s.onerror = ()=>{
-        try{ s.remove(); }catch{}
-        onerror && onerror();
+        try{ s.remove(); }catch(e){}
+        if (onerror) onerror();
       };
       document.head.appendChild(s);
     }
 
     function cleanupJsonpScripts(reqId){
-      const sel = reqId ? script[data-jsonp="${reqId}"] : 'script[data-jsonp]';
+      const sel = reqId ? `script[data-jsonp="${reqId}"]` : 'script[data-jsonp]';
       document.querySelectorAll(sel).forEach(el=>{
-        try{ el.remove(); }catch{}
+        try{ el.remove(); }catch(e){}
       });
     }
 
-    function fetchRows(limit, attempt=0){
+    function fetchRows(limit, attempt = 0){
       const reqId = ++state.lastReqId;
 
-      // 旧iframeタイマー片付け
+      // 既存iframeの掃除
       if (state.iframeTimer){
         clearTimeout(state.iframeTimer);
         state.iframeTimer = null;
         state.iframeReqId = null;
       }
-
-      // 旧iframe本体片付け
       const prev = document.getElementById('gviz-frame');
       if (prev) prev.remove();
 
-      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
-      const url  = ${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()};
+      const base = API_URL.replace(/\/macros\/u\/\d+\//, '/macros/');
+      const url  = `${base}?callback=onGviz&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit, HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
-      setStatus(
-        attempt === 0 ? '読み込み中…' : 読み込み中…（${attempt}）,
-        {fallback:false}
-      );
+      setStatus(attempt === 0 ? '読み込み中…' : `読み込み中…（${attempt}）`);
       showSkeleton();
 
       let settled = false;
@@ -910,13 +899,13 @@
 
         try{
           if (!payload || !Array.isArray(payload.rows)){
-            setStatus('データ取得に失敗しました（不正なレスポンス）', {fallback:false});
+            setStatus('データ取得に失敗しました（不正なレスポンス）');
             cleanupJsonpScripts(reqId);
             clearSkeleton();
             return;
           }
 
-          const rows = (payload.rows||[])
+          const rows = (payload.rows || [])
             .map(r => [
               r.artist || '',
               r.title  || '',
@@ -925,9 +914,9 @@
               r.cUrl   || '',
               r.dUrl   || ''
             ])
-            .filter(([a,b]) => ((a||'') + (b||'')).trim() !== '');
+            .filter(([a, b]) => ((a || '') + (b || '')).trim() !== '');
 
-          state.rows = rows;
+          state.rows  = rows;
           state.total = Number(
             (payload.total ?? null) != null
               ? payload.total
@@ -947,12 +936,12 @@
           cleanupJsonpScripts(reqId);
           state.fetchedLimit = Math.max(state.fetchedLimit || 0, state.rows.length);
 
-          setStatus(読み込み完了：${state.rows.length}件（全${state.total}件）, {fallback:false});
+          setStatus(`読み込み完了：${state.rows.length}件（全${state.total}件）`);
           clearSkeleton();
           render();
         }catch(e){
           console.error(e);
-          setStatus('読み込みに失敗しました', {fallback:false});
+          setStatus('読み込みに失敗しました');
           cleanupJsonpScripts(reqId);
           clearSkeleton();
         }
@@ -960,10 +949,12 @@
 
       // 短時間リトライ
       state.shortTimer = setTimeout(()=>{
-        if (!settled && attempt < MAX_RETRY) fetchRows(limit, attempt+1);
+        if (!settled && attempt < MAX_RETRY){
+          fetchRows(limit, attempt + 1);
+        }
       }, SHORT_TRY_MS);
 
-      // 全体タイムアウト → iframe
+      // 全体のタイムアウト → iframe
       state.globalTimer = setTimeout(()=>{
         if (!settled && reqId === state.lastReqId){
           tryIframeFallback(limit, reqId, 'jsonp-timeout');
@@ -979,19 +970,19 @@
       if (state.usedIframe) return;
       state.usedIframe = true;
 
-      setStatus(別ルートで取得中…（${reason}）, {fallback:true});
+      setStatus(`別ルートで取得中…（${reason}）`, {fallback:true});
 
       const old = document.getElementById('gviz-frame');
       if (old) old.remove();
 
-      const base = API_URL.replace(/\/macros\/u\/\d+\//,'/macros/');
-      const urlFrame = ${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit,HARD_LIMIT)}&authuser=0&v=${Date.now()};
+      const base = API_URL.replace(/\/macros\/u\/\d+\//, '/macros/');
+      const urlFrame = `${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit, HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
       const f = document.createElement('iframe');
-      f.id = 'gviz-frame';
+      f.id  = 'gviz-frame';
       f.src = urlFrame;
       f.style.display = 'none';
-      f.width = 0;
+      f.width  = 0;
       f.height = 0;
       f.tabIndex = -1;
       document.body.appendChild(f);
@@ -1003,7 +994,7 @@
         if (!$('status')?.dataset?.fallback) return;
         if ((state.rows && state.rows.length) > 0) return;
 
-        setStatus('取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）', {fallback:false});
+        setStatus('取得がタイムアウトしました（公開設定/デプロイ確認・ネットワーク再試行）');
         const g = document.getElementById('gviz-frame');
         if (g) g.remove();
         state.usedIframe = false;
@@ -1011,7 +1002,7 @@
       }, IFRAME_WATCHDOG_MS);
     }
 
-    /* ===== windowイベント ===== */
+    /* ===== イベント ===== */
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
@@ -1020,46 +1011,42 @@
     });
 
     window.addEventListener('offline', ()=>{
-      setStatus('オフラインです。接続を確認してください。', {fallback:false});
+      setStatus('オフラインです。接続を確認してください。');
     });
+
     window.addEventListener('online', ()=>{
-      setStatus('オンラインに復帰しました。再取得しています…', {fallback:false});
+      setStatus('オンラインに復帰しました。再取得しています…');
       fetchRows(INITIAL_FETCH);
     });
 
     document.addEventListener('visibilitychange', ()=>{
       if (document.visibilityState === 'visible'){
-        if ($('status')?.dataset?.fallback && (state.rows && state.rows.length)>0){
+        if ($('status')?.dataset?.fallback && (state.rows && state.rows.length) > 0){
           clearFallbackFlag();
         }
       }
     });
 
     /* ===== 初期化 ===== */
-    // 初回取得
     fetchRows(INITIAL_FETCH);
 
-    // 検索
     $('q').addEventListener('input', scheduleSearch);
 
-    // 件数変更
     $('limit').addEventListener('change', ()=>{
       const raw = $('limit').value;
-      if (raw === 'all' && (state.fetchedLimit||0) < (state.total||HARD_LIMIT)){
-        setStatus('全件を取得しています…', {fallback:false});
+      if (raw === 'all' && (state.fetchedLimit || 0) < (state.total || HARD_LIMIT)){
+        setStatus('全件を取得しています…');
         fetchRows(HARD_LIMIT);
-      } else {
+      }else{
         render();
       }
     });
 
-    // 対象変更
     (function(){
-      const el = document.getElementById('kind');
+      const el = $('kind');
       if (el) el.addEventListener('change', render);
     })();
 
-    // 並べ替え表示ボタン
     (function(){
       const btn   = $('show-sort');
       const panel = $('sort-panel');
@@ -1069,14 +1056,13 @@
         if (state.sort.panel){
           panel.classList.add('is-open');
           btn.textContent = '非表示';
-        } else {
+        }else{
           panel.classList.remove('is-open');
           btn.textContent = '表示';
         }
       });
     })();
 
-    // 並べ替えボタン3つ
     (function(){
       const btnArtist = $('sort-artist');
       const btnTitle  = $('sort-title');
@@ -1092,9 +1078,9 @@
           if (k === key){
             b.classList.add('is-active');
             if (k === 'artist') b.textContent = dir === 1 ? '歌手名順↑' : '歌手名順↓';
-            if (k === 'title')  b.textContent = dir === 1 ? '楽曲順↑'   : '楽曲順↓';
+            if (k === 'title')  b.textContent = dir === 1 ? '楽曲順↑' : '楽曲順↓';
             if (k === 'date')   b.textContent = dir === 1 ? '投稿日順↑' : '投稿日順↓';
-          } else {
+          }else{
             b.classList.remove('is-active');
             if (k === 'artist') b.textContent = '歌手名順↑';
             if (k === 'title')  b.textContent = '楽曲順↑';
@@ -1118,16 +1104,14 @@
       btnTitle.addEventListener('click',  ()=>toggleSort('title'));
       btnDate.addEventListener('click',   ()=>toggleSort('date'));
 
-      // 初期表示
       updateSortButtons();
     })();
 
-    // 画面サイズ変化
     const mq = window.matchMedia('(max-width: 768px)');
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
 
-    console.log('UI layout v20251023-2 + sort-panel + focus-unified + strong-date');
+    console.log('UI layout fixed v20251023-2');
   </script>
 </body>
 </html>
