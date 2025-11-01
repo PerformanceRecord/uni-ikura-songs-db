@@ -174,7 +174,7 @@
       cursor:pointer;
       white-space:nowrap;
     }
-    /* ← ここで弾幕カラムとフォーカス仕様を統一 */
+    /* フォーカス統一 */
     .sort-btn:focus,
     .show-sort-btn:focus{
       outline:3px solid var(--focus);
@@ -321,11 +321,16 @@
       return el ? el.value : 'all';
     }
 
+    /* ★ D列(文字)の冒頭8桁を最優先で取る日付変換 */
     function toSortableDate(dText){
-      if(!dText) return 0;
-      const m = dText.match(/^(\d{4})(\d{2})(\d{2})/);
-      if(!m) return 0;
-      return Number(m[1] + m[2] + m[3]);
+      if (!dText) return 0;
+      // 数字以外を全部落とす（"2025/10/30 前回" → "20251030"）
+      const digits = String(dText).replace(/\D/g, '');
+      if (digits.length < 8) return 0;
+      const y = digits.slice(0,4);
+      const m = digits.slice(4,6);
+      const d = digits.slice(6,8);
+      return Number(y + m + d);
     }
 
     function render(){
@@ -351,6 +356,7 @@
 
       let filtered = state.rows;
 
+      // 文字検索
       if (q) {
         filtered = filtered.filter(([artist, title]) => {
           const a = normalize(artist), t = normalize(title);
@@ -358,6 +364,7 @@
         });
       }
 
+      // 対象フィルタ
       if (kind !== 'all') {
         filtered = filtered.filter(([, , cText]) => String(cText || '').trim() === kind);
       }
@@ -375,8 +382,15 @@
           v2 = (r2[1] || '').toString();
           return v1.localeCompare(v2,'ja') * dir;
         } else {
-          v1 = toSortableDate(r1[3] || r1[5] || '');
-          v2 = toSortableDate(r2[3] || r2[5] || '');
+          // 投稿日順：まずD列(文字)から日付を強制抽出、それでダメならURL側を一応見る
+          v1 = toSortableDate(r1[3] || '');
+          v2 = toSortableDate(r2[3] || '');
+          if (v1 === 0 && r1[5]) {
+            v1 = toSortableDate(r1[5]);
+          }
+          if (v2 === 0 && r2[5]) {
+            v2 = toSortableDate(r2[5]);
+          }
           return (v1 - v2) * dir;
         }
       });
@@ -431,6 +445,7 @@
             ops.appendChild(aC);
           }
 
+          // 表示上は「URLを持っているときだけ」出す。D列に日付だけあってもここでは出さない。
           const dHref = safeHttpUrl(dUrl) || safeHttpUrl(urlFromText(dText));
           const dLabel = formatYmdLabel(dText);
           if (dHref) {
@@ -732,7 +747,7 @@
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
 
-    console.log('UI layout v20251023-2 + sort-panel + focus-unified');
+    console.log('UI layout v20251023-2 + sort-panel + focus-unified + strong-date');
   </script>
 </body>
 </html>
