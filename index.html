@@ -27,6 +27,7 @@
       --focus:#3897c9;
       --pill-bg:#f6f7f9;
       --link:#2563eb;
+      --control-h:34px;
     }
 
     *{box-sizing:border-box}
@@ -57,10 +58,72 @@
       min-width:0;
     }
 
-    .muted{
-      color:var(--muted);
-      font-size:13px;
+    .toolbar{display:none}
+
+    /* ── 上部コントロール（件数・対象・並び替え）を高さ34pxで揃える ── */
+    .limit-wrap,
+    .type-wrap,
+    .show-sort-btn{
+      height:var(--control-h);
     }
+
+    .limit-wrap{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .limit-wrap label{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      line-height:1; /* 34px内で中央寄せ */
+    }
+    #limit{
+      width:auto;
+      min-width:78px;
+      height:var(--control-h);
+      padding:6px 8px;
+      font-size:13px;
+      line-height:1.2;
+    }
+
+    .type-wrap{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .type-wrap label{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      line-height:1;
+    }
+    #kind{
+      width:auto;
+      min-width:90px;
+      height:var(--control-h);
+      padding:6px 8px;
+      font-size:13px;
+      line-height:1.2;
+    }
+
+    .dm-wrap{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dm-select-wrap{flex:7 1 0}
+    .dm-btn-wrap{
+      flex:3 1 0;
+      display:flex;
+    }
+    #dm-select{
+      width:100%;
+      padding:6px 10px;
+      font-size:16px;
+      line-height:1.2;
+    }
+    .btn-full{width:100%}
 
     input[type="search"],select{
       width:100%;
@@ -78,6 +141,11 @@
     .btn-pill:focus{
       outline:3px solid var(--focus);
       outline-offset:2px;
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:13px;
     }
 
     .btn{
@@ -129,6 +197,47 @@
       font-weight:700;
     }
 
+    table.stacked{table-layout:auto}
+    table.stacked th,
+    table.stacked td{width:auto !important}
+    table.stacked thead th{
+      width:100% !important;
+      white-space:nowrap;
+    }
+    table.stacked .item-top{
+      background:#fff;
+      border-bottom:none;
+    }
+    table.stacked .item-ops{background:#fff}
+    table.stacked .item-ops td{border-top:none}
+    table.stacked .item-top .l1{
+      font-size:16px;
+      font-weight:700;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+    table.stacked .item-top .l1 .sep{opacity:.6}
+    table.stacked .item-ops .ops{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      overflow:visible;
+      min-width:0;
+    }
+
+    /* ── 操作列だけ2px小さく ── */
+    table.stacked .item-ops .ops .btn-pill,
+    table.stacked .item-ops .ops .btn{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:8px;
+      line-height:1.2;
+    }
+
     .btn-pill{
       display:inline-block;
       border:1px solid var(--line);
@@ -140,11 +249,15 @@
       text-decoration:none;
       white-space:nowrap;
       word-break:keep-all;
+      max-width:unset;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .btn-pill:hover{
       background:#eef2f7;
       text-decoration:none;
     }
+    .btn-pill:active{transform:translateY(1px)}
 
     .skeleton{
       height:16px;
@@ -187,16 +300,31 @@
       .l2{
         display:flex;
         align-items:center;
-        gap:8px;
+        gap:6px;
         justify-content:flex-end;
         flex-wrap:nowrap;
         overflow:hidden;
       }
       .l2 .btn-pill{max-width:40vw}
       .btn{padding:8px 12px;font-size:14px}
+      .dm-select-wrap{flex:7 1 0}
+      .dm-btn-wrap{flex:3 1 0}
+
+      /* モバイルでも並び替えボタンは黒にする */
+      .show-sort-btn,
+      .sort-btn{
+        color:#000 !important;
+      }
+
+      /* モバイルでも操作列は小さい方を使う */
+      .l2 .btn-pill,
+      .l2 .btn{
+        font-size:12px;
+        padding:6px 10px;
+        border-radius:8px;
+      }
     }
 
-    /* ===== UI 行 ===== */
     .ui .row{
       display:flex;
       gap:8px;
@@ -204,56 +332,48 @@
       margin-top:8px;
     }
     .ui .row:first-child{margin-top:0}
+    .ui .row2 .search{flex:1 1 0;min-width:0}
+    .ui .row3 .dm-select-wrap{flex:7 1 0}
+    .ui .row3 .dm-btn-wrap{flex:3 1 0}
+    .ui .row4 #status{flex:1 1 0}
 
-    .limit-wrap,
-    .type-wrap{
-      display:flex;
-      align-items:center;
-      gap:6px;
-    }
-    .limit-wrap label,
-    .type-wrap label{
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
-    }
+    .ui .row1 .limit-wrap,
+    .ui .row1 .type-wrap{flex:0 0 auto}
 
-    /* ▼ ここで1行目を34pxに固定する ▼ */
+    /* ▼ 並べ替えUIの上書き ▼ */
     .ui .row1{
       display:flex;
       gap:8px;
       align-items:center;
       flex-wrap:nowrap;
     }
-    .ui .row1 select{
-      height:34px;          /* ←指定 */
-      line-height:1.2;
-      padding:6px 8px;
-      font-size:13px;
-    }
-    .ui .row1 .show-sort-btn{
-      height:34px;          /* ←指定 */
-      min-width:5.4rem;     /* 「並び替え」に合わせた幅 */
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:8px;
-      font-size:13px;
-      white-space:nowrap;
-      box-sizing:border-box;
-    }
 
-    /* 並べ替えパネル */
     .ui .row1b{
       display:none;
       gap:8px;
       align-items:center;
       flex-wrap:wrap;
     }
-    .ui .row1b.is-open{display:flex}
+    .ui .row1b.is-open{
+      display:flex;
+    }
 
+    /* 並び替えボタン（トグル）のフレームを34pxで固定・黒に固定 */
+    .show-sort-btn{
+      min-width:78px;
+      height:var(--control-h);
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      padding:6px 10px;
+      font-size:13px;
+      cursor:pointer;
+      white-space:nowrap;
+      color:#000;
+      -webkit-appearance:none;
+    }
+
+    /* 並べ替え3ボタン（歌手名順/楽曲順/投稿日順）も黒に固定 */
     .sort-btn{
       border:1px solid var(--line);
       background:#fff;
@@ -262,67 +382,34 @@
       font-size:13px;
       cursor:pointer;
       white-space:nowrap;
+      height:var(--control-h);
+      display:flex;
+      align-items:center;
+      color:#000;
+      -webkit-appearance:none;
     }
     .sort-btn.is-active{
       border-color:var(--focus);
       background:rgba(56,151,201,.08);
-      color:#0f172a;
+      color:#000;
       font-weight:600;
     }
+
     .sort-btn:focus,
     .show-sort-btn:focus{
       outline:3px solid var(--focus);
       outline-offset:2px;
     }
-
-    /* ====== テーブル表示用レイアウト ====== */
-    table.stacked{table-layout:auto}
-    table.stacked .item-top{
-      background:#fff;
-      border-bottom:none;
-    }
-    table.stacked .item-ops{
-      background:#fff;
-    }
-    table.stacked .item-ops td{
-      border-top:none;
-    }
-    table.stacked .item-top .l1{
-      font-size:16px;
-      font-weight:700;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:flex-start;
-    }
-    table.stacked .item-top .l1 .sep{opacity:.6}
-    table.stacked .item-ops .ops{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      justify-content:flex-end;
-      flex-wrap:wrap;
-      overflow:visible;
-      min-width:0;
-    }
-
-    /* ▼ 操作列だけ2px小さくする上書き ▼ */
-    .item-ops .ops .btn-pill{
-      padding:6px 10px;     /* 元 8 12 → 2px小さく */
-      font-size:12px;       /* 1～2px落とす */
-      border-radius:8px;
-    }
-    .item-ops .ops .btn{
-      padding:6px 10px;     /* 元 8 12 → 2px小さく */
-      font-size:12px;
-      border-radius:8px;
+    .sort-btn.is-active:focus{
+      outline:3px solid var(--focus);
+      outline-offset:2px;
     }
   </style>
 </head>
 <body>
 
   <div class="card ui">
-    <!-- 1行目：件数 / 対象 / 並び替えトグル -->
+    <!-- 1列目：件数 / 対象 / 並び替えトグル -->
     <div class="row row1">
       <div class="limit-wrap">
         <label for="limit">件数</label>
@@ -346,34 +433,38 @@
       <button id="show-sort" class="show-sort-btn" type="button">並び替え</button>
     </div>
 
-    <!-- 並べ替えボタン行 -->
+    <!-- 並べ替えボタン群 -->
     <div class="row row1b" id="sort-panel" aria-label="並べ替え">
       <button type="button" class="sort-btn" data-sort="artist" id="sort-artist">歌手名順↑</button>
       <button type="button" class="sort-btn" data-sort="title"  id="sort-title">楽曲順↑</button>
       <button type="button" class="sort-btn" data-sort="date"   id="sort-date">投稿日順↑</button>
     </div>
 
-    <!-- 検索 -->
+    <!-- 2列目：検索 -->
     <div class="row row2">
       <input class="search" id="q" type="search" placeholder="曲名／アーティスト名で検索" autocomplete="off">
     </div>
 
-    <!-- 弾幕コピー -->
-    <div class="row row3">
-      <select id="dm-select" title="弾幕を選択">
-        <option value="🍣🧡🍣🧡🍣🧡">🍣🧡🍣</option>
-        <option value="🍣🧡🎶🍣🧡🎶">🍣🧡🎶</option>
-      </select>
-      <button id="dm-copy" class="btn btn-full" type="button" title="選択した弾幕をコピー">コピー</button>
+    <!-- 3列目：弾幕コピー -->
+    <div class="row row3 dm-wrap" aria-label="弾幕コピー">
+      <div class="dm-select-wrap">
+        <select id="dm-select" title="弾幕を選択">
+          <option value="🍣🧡🍣🧡🍣🧡">🍣🧡🍣</option>
+          <option value="🍣🧡🎶🍣🧡🎶">🍣🧡🎶</option>
+        </select>
+      </div>
+      <div class="dm-btn-wrap">
+        <button id="dm-copy" class="btn btn-full" type="button" title="選択した弾幕をコピー">コピー</button>
+      </div>
     </div>
 
-    <!-- ステータス -->
+    <!-- 4列目：ステータス -->
     <div class="row row4">
       <div class="muted" id="status" role="status" aria-live="polite">読み込み中…</div>
     </div>
   </div>
 
-  <!-- 結果表示 -->
+  <!-- 結果表示カード -->
   <div class="card" style="margin-top:12px;">
     <div class="muted" id="hint">検索結果がここに表示されます。</div>
     <div id="table" style="display:none;"></div>
@@ -407,9 +498,14 @@
       shortTimer: null,
       iframeTimer: null,
       iframeReqId: null,
-      sort: { key:'artist', dir:1, panel:false }
+      sort: {
+        key: 'artist',  // artist | title | date
+        dir: 1,
+        panel: false
+      }
     };
 
+    /* ===== ユーティリティ ===== */
     function $(id){ return document.getElementById(id); }
 
     function setStatus(text, opts = {}){
@@ -418,7 +514,7 @@
       el.textContent = text;
       if (opts.fallback){
         el.dataset.fallback = '1';
-      }else{
+      } else {
         delete el.dataset.fallback;
       }
     }
@@ -434,7 +530,11 @@
     };
 
     function normalize(s){
-      return (s || '').toString().toLowerCase().replace(/\s+/g,' ').trim();
+      return (s || '')
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
     function scheduleSearch(){
@@ -446,11 +546,11 @@
       const t = $('toast');
       t.textContent = msg;
       t.classList.add('show');
-      setTimeout(()=>t.classList.remove('show'),1400);
+      setTimeout(()=>t.classList.remove('show'), 1400);
     }
 
     async function copyPair(title, artist){
-      const text = ((title||'').trim() + ' / ' + (artist||'').trim()).trim();
+      let text = ((title || '').trim() + ' / ' + (artist || '').trim()).trim();
       try{
         if (navigator.clipboard?.writeText){
           await navigator.clipboard.writeText(text);
@@ -463,7 +563,7 @@
           ta.remove();
         }
         showToast('コピーしました：' + text);
-      }catch{
+      }catch(e){
         showToast('コピーに失敗しました');
       }
     }
@@ -482,7 +582,7 @@
           ta.remove();
         }
         showToast('弾幕をコピーしました');
-      }catch{
+      }catch(e){
         showToast('弾幕のコピーに失敗しました');
       }
     });
@@ -503,7 +603,7 @@
       try{
         const url = new URL(String(u));
         return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : '';
-      }catch{
+      }catch(e){
         return '';
       }
     }
@@ -527,16 +627,18 @@
       return el ? el.value : 'all';
     }
 
+    // D列から日付を抜く
     function toSortableDate(dText){
       if (!dText) return 0;
-      const digits = String(dText).replace(/\D/g,'');
+      const digits = String(dText).replace(/\D/g, '');
       if (digits.length < 8) return 0;
       const y = digits.slice(0,4);
       const m = digits.slice(4,6);
       const d = digits.slice(6,8);
-      return Number(y+m+d);
+      return Number(y + m + d);
     }
 
+    /* ===== 描画 ===== */
     function render(){
       clearFallbackFlag();
 
@@ -551,6 +653,7 @@
       listWrap.style.display  = 'none';
 
       const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
       const q        = normalize($('q').value || '');
       const rawLimit = $('limit').value;
       const kind     = getKindValue();
@@ -558,10 +661,12 @@
       const limit = (rawLimit === 'all')
         ? Math.min(HARD_LIMIT, state.total || state.rows.length)
         : Math.min(parseInt(rawLimit,10) || 20, HARD_LIMIT);
+
       const limitLabel = (rawLimit === 'all') ? '全件' : `${limit}件`;
 
       let filtered = state.rows;
 
+      // 検索
       if (q){
         filtered = filtered.filter(([artist, title])=>{
           const a = normalize(artist);
@@ -570,10 +675,12 @@
         });
       }
 
+      // 対象フィルタ
       if (kind !== 'all'){
         filtered = filtered.filter(([, , cText]) => String(cText || '').trim() === kind);
       }
 
+      // 並べ替え
       const { key, dir } = state.sort;
       filtered = filtered.slice().sort((r1, r2)=>{
         if (key === 'artist'){
@@ -586,6 +693,7 @@
           const v2 = (r2[1] || '').toString();
           return v1.localeCompare(v2, 'ja') * dir;
         }
+        // date
         let v1 = toSortableDate(r1[3] || '');
         let v2 = toSortableDate(r2[3] || '');
         if (v1 === 0 && r1[5]) v1 = toSortableDate(r1[5]);
@@ -596,12 +704,16 @@
       const rows = filtered.slice(0, limit);
 
       if (q || kind !== 'all'){
-        setStatus(`表示中 ${rows.length}件ヒット（対象${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`);
+        setStatus(
+          `表示中 ${rows.length}件ヒット（対象${filtered.length}件／${state.total}件）／表示上限 ${limitLabel}`
+        );
       }else{
-        setStatus(`表示中 ${rows.length}件ヒット（全${state.total}件）／表示上限 ${limitLabel}`);
+        setStatus(
+          `表示中 ${rows.length}件ヒット（全${state.total}件）／表示上限 ${limitLabel}`
+        );
       }
 
-      if (!rows.length){
+      if (rows.length === 0){
         hint.textContent = (q || kind !== 'all') ? '該当なし' : '検索結果がここに表示されます。';
         return;
       }
@@ -651,7 +763,7 @@
           trTop.appendChild(tdTop);
           tbody.appendChild(trTop);
 
-          // 下段（操作列）
+          // 下段
           const trOps = document.createElement('tr');
           trOps.className = 'item-ops';
           const tdOps = document.createElement('td');
@@ -676,9 +788,9 @@
           const dLabel = formatYmdLabel(dText);
           if (dHref){
             const aD = document.createElement('a');
-            aD.href = dHref;
+            aD.href   = dHref;
             aD.target = '_blank';
-            aD.rel = 'noopener noreferrer';
+            aD.rel    = 'noopener noreferrer';
             aD.className = 'btn-pill';
             aD.title = dLabel ? `前回 ${dLabel}` : '前回';
             aD.textContent = dLabel ? `▶前回${dLabel}` : '▶前回';
@@ -763,17 +875,18 @@
           $('mblist').appendChild(item);
         });
 
-        $('mblist').style.display = 'block';
+        $('mblist').style.display='block';
       }
     }
 
+    /* ===== JSONP まわり ===== */
     function jsonpOnce(url, onerror, reqId){
       const s = document.createElement('script');
       s.src = url;
       s.async = true;
       s.dataset.jsonp = String(reqId || '');
       s.onerror = ()=>{
-        try{ s.remove(); }catch{}
+        try{ s.remove(); }catch(e){}
         if (onerror) onerror();
       };
       document.head.appendChild(s);
@@ -782,13 +895,14 @@
     function cleanupJsonpScripts(reqId){
       const sel = reqId ? `script[data-jsonp="${reqId}"]` : 'script[data-jsonp]';
       document.querySelectorAll(sel).forEach(el=>{
-        try{ el.remove(); }catch{}
+        try{ el.remove(); }catch(e){}
       });
     }
 
     function fetchRows(limit, attempt = 0){
       const reqId = ++state.lastReqId;
 
+      // 既存iframeの掃除
       if (state.iframeTimer){
         clearTimeout(state.iframeTimer);
         state.iframeTimer = null;
@@ -871,7 +985,7 @@
         }
       }, SHORT_TRY_MS);
 
-      // 全体タイムアウト → iframe
+      // 全体のタイムアウト → iframe
       state.globalTimer = setTimeout(()=>{
         if (!settled && reqId === state.lastReqId){
           tryIframeFallback(limit, reqId, 'jsonp-timeout');
@@ -885,8 +999,8 @@
       if (reqId !== state.lastReqId) return;
       if ((state.rows && state.rows.length) > 0) return;
       if (state.usedIframe) return;
-
       state.usedIframe = true;
+
       setStatus(`別ルートで取得中…（${reason}）`, {fallback:true});
 
       const old = document.getElementById('gviz-frame');
@@ -896,10 +1010,10 @@
       const urlFrame = `${base}?frame=1&sheet=${encodeURIComponent(SHEET_KEY)}&limit=${Math.min(limit, HARD_LIMIT)}&authuser=0&v=${Date.now()}`;
 
       const f = document.createElement('iframe');
-      f.id = 'gviz-frame';
+      f.id  = 'gviz-frame';
       f.src = urlFrame;
       f.style.display = 'none';
-      f.width = 0;
+      f.width  = 0;
       f.height = 0;
       f.tabIndex = -1;
       document.body.appendChild(f);
@@ -919,6 +1033,7 @@
       }, IFRAME_WATCHDOG_MS);
     }
 
+    /* ===== イベント ===== */
     window.addEventListener('message', (ev)=>{
       const d = ev?.data;
       if (!d || d.type !== 'gviz') return;
@@ -943,7 +1058,7 @@
       }
     });
 
-    /* 初期化 */
+    /* ===== 初期化 ===== */
     fetchRows(INITIAL_FETCH);
 
     $('q').addEventListener('input', scheduleSearch);
@@ -987,7 +1102,8 @@
 
       function updateSortButtons(){
         const { key, dir } = state.sort;
-        const m = { artist:btnArtist, title:btnTitle, date:btnDate };
+        const m = { artist: btnArtist, title: btnTitle, date: btnDate };
+
         Object.keys(m).forEach(k=>{
           const b = m[k];
           if (k === key){
@@ -1007,7 +1123,7 @@
       function toggleSort(targetKey){
         if (state.sort.key === targetKey){
           state.sort.dir = state.sort.dir * -1;
-        }else{
+        } else {
           state.sort.key = targetKey;
           state.sort.dir = 1;
         }
@@ -1025,6 +1141,8 @@
     const mq = window.matchMedia('(max-width: 768px)');
     mq.addEventListener?.('change', render);
     window.addEventListener('resize', render);
+
+    console.log('UI layout fixed v20251023-2 + 34px-controls + black-sort');
   </script>
 </body>
 </html>
