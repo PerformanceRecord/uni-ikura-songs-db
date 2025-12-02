@@ -113,15 +113,33 @@
       gap:8px;
     }
     .dm-select-wrap{flex:7 1 0}
+    .dm-select-wrap.is-custom{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
     .dm-btn-wrap{
       flex:3 1 0;
       display:flex;
+    }
+    .dm-custom{
+      margin-top:8px;
+      display:none;
     }
     #dm-select{
       width:100%;
       padding:6px 10px;
       font-size:16px;
       line-height:1.2;
+    }
+    .dm-select-wrap.is-custom #dm-select{
+      width:calc(100% - 3ch);
+      flex:1 1 auto;
+    }
+    .dm-select-wrap.is-custom .dm-custom{
+      display:block;
+      margin-top:0;
+      flex:0 0 auto;
     }
     .btn-full{width:100%}
 
@@ -135,7 +153,15 @@
       color:#1a1a1a;
       outline:none;
     }
+    .dm-custom input{
+      width:64px;
+      padding:6px 8px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      font-size:15px;
+    }
     input[type="search"]:focus,
+    input[type="text"]:focus,
     select:focus,
     .btn:focus,
     .btn-pill:focus{
@@ -447,18 +473,21 @@
     <!-- 3列目：弾幕コピー -->
     <div class="row row3 dm-wrap" aria-label="弾幕コピー">
       <div class="dm-select-wrap">
-     <select id="dm-select" title="弾幕の種類を選択">
-      <option value="🧡🎶🍣🥂🧡🎶🍣🥂🧡🎶🍣🥂">🧡🎶🍣🥂…(🥂)</option>
-      <option value="🍣🎶🧡✨🍣🎶🧡✨🍣🎶🧡✨">🍣🎶🧡✨…(🍣)</option>
-      <option value="🍶🧡🎺🍶🧡🎺🍶🧡🎺🍶🧡🎺">🍶🧡🎺🍶…(🍶)</option>
-      <option value="🎧💫♬🧡🎧💫♬🧡🎧💫♬🧡">🎧💫♬🧡…(🎧)</option>
-      <option value="🧡🎹🎶🍣🧡🎹🎶🍣🧡🎹🎶🍣">🧡🎹🎶🍣…(🎹)</option>
-      <option value="🎵☀🧡～🎵☀🧡～🎵☀🧡～">🎵☀🧡～…(🎵)</option>
-      <option value="世界一🌏🌟⋆꙳イケボ✨世界一🌏🌟⋆꙳イケボ✨世界一🌏🌟⋆꙳イケボ✨">世界一イケボ…(🌏)</option>
-      <option value="✩࿐⋆*🍼👶 ﾟ·꒰ঌ ﾊﾞｯﾌﾞｰ ໒꒱· ﾟ👶🍼✩࿐⋆*">✩࿐⋆*🍼👶…(🍼)</option>
-</select>
+        <select id="dm-select" title="弾幕の種類を選択">
+          <option value="🧡🎶🍣🥂🧡🎶🍣🥂🧡🎶🍣🥂">🧡🎶🍣🥂…(🥂)</option>
+          <option value="🍣🎶🧡✨🍣🎶🧡✨🍣🎶🧡✨">🍣🎶🧡✨…(🍣)</option>
+          <option value="🍶🧡🎺🍶🧡🎺🍶🧡🎺🍶🧡🎺">🍶🧡🎺🍶…(🍶)</option>
+          <option value="🎧💫♬🧡🎧💫♬🧡🎧💫♬🧡">🎧💫♬🧡…(🎧)</option>
+          <option value="🧡🎹🎶🍣🧡🎹🎶🍣🧡🎹🎶🍣">🧡🎹🎶🍣…(🎹)</option>
+          <option value="🎵☀🧡～🎵☀🧡～🎵☀🧡～">🎵☀🧡～…(🎵)</option>
+          <option value="世界一🌏🌟⋆꙳イケボ✨世界一🌏🌟⋆꙳イケボ✨世界一🌏🌟⋆꙳イケボ✨">世界一イケボ…(🌏)</option>
+          <option value="✩࿐⋆*🍼👶 ﾟ·꒰ঌ ﾊﾞｯﾌﾞｰ ໒꒱· ﾟ👶🍼✩࿐⋆*">✩࿐⋆*🍼👶…(🍼)</option>
+          <option value="custom">カスタム弾幕</option>
+        </select>
 
-</select>
+        <div class="dm-custom" id="dm-custom">
+          <input id="dm-custom-input" type="text" aria-label="カスタム弾幕入力" autocomplete="off">
+        </div>
       </div>
       <div class="dm-btn-wrap">
         <button id="dm-copy" class="btn btn-full" type="button" title="選択した弾幕をコピー">弾幕コピー</button>
@@ -575,8 +604,32 @@
       }
     }
 
+    function buildCustomDm(text){
+      const custom = text || '';
+      if (!custom) return '🍣🧡🍣🧡🍣🧡';
+      return Array.from({length:3},()=>`🍣🧡${custom}`).join('');
+    }
+
+    (function(){
+      const select = $('dm-select');
+      const customWrap = $('dm-custom');
+      const customInput = $('dm-custom-input');
+      const dmSelectWrap = select?.closest('.dm-select-wrap');
+      if (!select || !customWrap || !customInput || !dmSelectWrap) return;
+
+      function toggleCustom(){
+        const isCustom = select.value === 'custom';
+        dmSelectWrap.classList.toggle('is-custom', isCustom);
+        if (isCustom) customInput.focus();
+      }
+
+      select.addEventListener('change', toggleCustom);
+      toggleCustom();
+    })();
+
     $('dm-copy').addEventListener('click', async ()=>{
-      const text = $('dm-select').value || '';
+      const select = $('dm-select');
+      const text = (select?.value === 'custom') ? buildCustomDm($('dm-custom-input')?.value || '') : (select?.value || '');
       try{
         if (navigator.clipboard?.writeText){
           await navigator.clipboard.writeText(text);
